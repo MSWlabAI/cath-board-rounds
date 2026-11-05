@@ -4,6 +4,7 @@ and the agents' own briefs (--briefs FILE | - | DIR). Outputs plan-case-N.md/.ht
 usage: plan.py CASE [--briefs FILE|-|DIR] [--out DIR] [--pdf] [--approved] [--force]      plan.py --selftest
 With --briefs DIR (the Clerk's flow) it refuses stale or mixed-run briefs and a dead room recorder unless --force."""
 import glob, hashlib, html, json, os, re, subprocess, sys, time
+DASH32 = ' stroke-dasharray="3 2"'  # outside the f-string: Python < 3.12 forbids a backslash in an f-string expression
 SIGN_WAIT_S = 10  # the recorder polls every 2 s; the Clerk can run this within 1 s of the click
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import records, angio, pk
@@ -15,6 +16,9 @@ SIGNED = "Synthetic teaching content. Not clinical advice. Not a medical device.
 LOGIC = "Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them."
 LOGIC_SHORT = "Template logic (likelihood weights and bands, prep rules, Imaging triggers, Heart Team factors, stage assignment, Labs' eGFR cutoff) is also unreviewed."
 MAX_AGE_MIN, MAX_SPREAD_MIN, HEARTBEAT_S = 90, 15, 180
+
+def stress_detail(pre):
+    return re.sub(r'^positive\s*', '', pre['stress_text'], flags=re.I) or 'no detail'
 
 def provenance(case, rec_dir=None):
     """Which inputs produced this plan: short hashes of template/thresholds/plan.py, the data file, and the chair packet id the briefs answer."""
@@ -100,7 +104,7 @@ def likelihood(pre, th):
         if n >= L.get("ccta_obstructive_percent", 70) or (lm and n >= L.get("ccta_left_main_percent", 50)): drivers.append((f"CCTA {l['pct']}, severe stenosis, CAD-RADS 4A/4B range ({l['id']} {l['vessel']}; E5)", P["ccta_obstructive"]))
         elif n >= L.get("ccta_intermediate_percent", 50): drivers.append((f"CCTA {l['pct']}, intermediate stenosis ({l['id']} {l['vessel']}; E6)", P["ccta_intermediate"]))
     if len(pre["cta"]) >= 2: drivers.append(("two or more CCTA lesions", P["ccta_two_or_more_lesions"]))
-    if pre["stress"] == "positive": drivers.append((f"stress test positive ({re.sub(r'^positive\s*', '', pre['stress_text'], flags=re.I) or 'no detail'})", P["stress_positive"]))
+    if pre["stress"] == "positive": drivers.append((f"stress test positive ({stress_detail(pre)})", P["stress_positive"]))
     elif pre["stress"] == "equivocal": drivers.append(("stress test equivocal", P["stress_equivocal"]))
     if pre["symptoms"] == "typical": drivers.append(("typical angina", P["typical_angina"]))
     wall = (pre["stress_text"].split(",", 1)[1] if "," in pre["stress_text"] else "").lower(); vessels = sorted({v for w, vs in L.get("territories", {}).items() if w in wall for v in vs})
@@ -287,7 +291,7 @@ def tree(ls):
         narrow = max(1.0, w * (1 - n / 100))  # lumen drawn at the stated % narrowing
         marks += f"<polyline points='{line}' fill='none' stroke='#0d1420' stroke-width='{w + 3}' stroke-linecap='butt'/><polyline points='{line}' fill='none' stroke='#d3ddee' stroke-width='{narrow:.1f}' stroke-linecap='round'/>"
         if re.search(r"moderate|severe", l["calcium"]): marks += "".join(f"<circle cx='{x + dx:.1f}' cy='{y + dy:.1f}' r='2.2' fill='#ffe066'/>" for dx, dy in ((-9, -8), (-11, 0), (-9, 8)))
-        marks += f"<circle cx='{x:.1f}' cy='{y:.1f}' r='13' fill='none' stroke='{col}' stroke-width='2.8'{'' if sev else ' stroke-dasharray=\"3 2\"'}/>"
+        marks += f"<circle cx='{x:.1f}' cy='{y:.1f}' r='13' fill='none' stroke='{col}' stroke-width='2.8'{'' if sev else DASH32}/>"
         left = key.startswith(("lm", "prox rca", "mid-rca", "distal rca", "rca", "pda", "plv")); lx = x - 19 if left else x + 19
         ring_labels += f"<text x='{lx:.1f}' y='{y + 4:.1f}' font-size='12.5' font-weight='700' fill='#ffffff' stroke='#0d1420' stroke-width='3.2' paint-order='stroke' text-anchor='{'end' if left else 'start'}'>{e(l['id'])} {e(l['pct'])}</text>"
     return ("<svg role='img' aria-label='Synthetic coronary tree with AHA segment numbers and the angio lesions marked; not an image of any patient' viewBox='0 0 380 336' width='300' height='265' "

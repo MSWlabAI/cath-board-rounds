@@ -4,6 +4,7 @@ Film-style render: tapering lumen polygons, a smooth hourglass narrowing at each
 a guide catheter and aortic root, AHA segment numbers. Right-dominant tree, anterior schematic, not to scale. Layers are named groups (film, vessels, lesions, labels) so an illustrator can restyle the file.
 usage: angio.py CASE [OUT.svg]      (library use: svg(lesions) -> str)"""
 import html, math, os, random, re, sys
+DASH = ' stroke-dasharray="5 4"'  # outside the f-string: Python < 3.12 forbids a backslash in an f-string expression
 import pk
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 W, H = 760, 720
@@ -80,7 +81,7 @@ def svg(ls, title=True):
     for l, x, y, seg in badges:
         sev = (pk.pct(l["pct"]) or 0) >= 70; col = "#ff5252" if sev else "#ffb300"; cta = l.get("cta")
         left = seg in ("lm", "rca1", "rca2", "rca3", "pda", "plv"); lx = x - 38 if left else x + 38
-        les += (f"<circle cx='{x:.1f}' cy='{y:.1f}' r='26' fill='none' stroke='{col}' stroke-width='2.2'{'' if (sev and not cta) else ' stroke-dasharray=\"5 4\"'}/>"
+        les += (f"<circle cx='{x:.1f}' cy='{y:.1f}' r='26' fill='none' stroke='{col}' stroke-width='2.2'{'' if (sev and not cta) else DASH}/>"
                 f"<line x1='{x + (-26 if left else 26):.1f}' y1='{y:.1f}' x2='{lx + (6 if left else -6):.1f}' y2='{y:.1f}' stroke='{col}' stroke-width='1.6'/>"
                 f"<text x='{lx:.1f}' y='{y + 5:.1f}' text-anchor='{'end' if left else 'start'}' font-size='17' font-weight='700' fill='#fff'>{'CTA ' if cta else ''}{e(l['id'])} {e(l['pct'])}</text>")
     cath = f"M{X(262):.0f} -8 C {X(262):.0f} 40, {X(238):.0f} 44, {X(210):.0f} {Y(36):.0f} L {X(200):.0f} {Y(40):.0f}"

@@ -7,13 +7,17 @@ SIGN_WAIT_S = 10  # the recorder polls every 2 s; the Clerk can run this within 
 import board_pdf, html, records, plan
 HERE = os.path.dirname(os.path.realpath(__file__)); ROOT = os.path.join(HERE, "..")
 MAX_AGE_MIN, HEARTBEAT_S = 90, 180
+def ruling_text(ru, c):
+    return re.sub(r'^Case \d = ', '', ru.get(c, {}).get('text', 'no ruling recorded'))
+
+
 def summary(rows, d, approved=False):
     """HTML 'Session summary' (ruling and plan status per case) and 'Approvals' (every card decision) from the recorder's records."""
     e = html.escape; ap = records.approvals(d); ru = records.rulings(d); out = []
     for r in rows:
         c = [x.strip() for x in r.strip().strip("|").split("|")][1]; plan = [x for x in ap if re.search(rf"\bcase {re.escape(c)}\b", x["what"], re.I)]
         last = plan[-1] if plan else None; st = "not requested" if not last else (f"signed {records.when(last['ts'])}" if last["decision"].startswith("Allow") else f"{last['decision'].lower()} {records.when(last['ts'])}")
-        out.append(f"<tr><td>{e(c)}</td><td>{e(re.sub(r'^Case \d = ', '', ru.get(c, {}).get('text', 'no ruling recorded')))}</td><td>{e(st)}</td></tr>")
+        out.append(f"<tr><td>{e(c)}</td><td>{e(ruling_text(ru, c))}</td><td>{e(st)}</td></tr>")
     s = "<h2>Session summary</h2><table><tr><th>Case</th><th>Chair's ruling as recorded</th><th>Plan</th></tr>" + "".join(out) + "</table>"
     rows_ap = "".join(f"<tr><td>{e(records.when(x['ts']))}</td><td>{e(x['request'])}</td><td class='{'ok' if x['decision'].startswith('Allow') else 'out'}'>{e(x['decision'])}</td><td>{e(x['what'])}</td><td>{e(x['by'])}</td></tr>" for x in ap)
     if approved: rows_ap += f"<tr><td>{e(time.strftime('%H:%M:%S'))}</td><td>this board</td><td class=ok>Allow once</td><td>Sign the final board</td><td>the chair, on the Switch card</td></tr>"
