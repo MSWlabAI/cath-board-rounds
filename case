@@ -1,0 +1,3 @@
+#!/bin/sh
+# ./case N agent  -> prints the chair message for that case and copies it to the clipboard
+COPY=1 exec python3 "$(dirname "$0")/tools/packet.py" "$@"
