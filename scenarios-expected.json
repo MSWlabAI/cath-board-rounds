@@ -1,0 +1,96 @@
+{
+  "1": {
+    "band": "higher",
+    "score": 8,
+    "drivers": [
+      "territory of the CCTA lesion",
+      "low EF"
+    ],
+    "q_has": [
+      "0 stents named",
+      "Calcium moderate",
+      "Support devices on the shelf",
+      "IVUS catheter is 0 on hand"
+    ],
+    "scope": "Branch A and Branch B"
+  },
+  "2": {
+    "band": "lower",
+    "score": 2,
+    "drivers_not": [
+      "territory"
+    ],
+    "q_not": [
+      "Support devices",
+      "IVUS catheter is 0"
+    ],
+    "scope": "Branch B on standby"
+  },
+  "3": {
+    "band": "higher",
+    "score": 7,
+    "drivers": [
+      "territory of the CCTA lesion"
+    ],
+    "q_has": [
+      "Calcium severe"
+    ],
+    "q_not": [
+      "Support devices"
+    ],
+    "scope": "Branch A and Branch B"
+  },
+  "4": {
+    "band": "higher",
+    "score": 11,
+    "drivers": [
+      "two or more CCTA lesions",
+      "territory of the CCTA lesion",
+      "low EF"
+    ],
+    "q_has": [
+      "2 lesions on CCTA",
+      "Left main or bifurcation",
+      "Support devices on the shelf",
+      "IVUS catheter is 0 on hand"
+    ],
+    "q_not": [
+      "Calcium moderate",
+      "Calcium severe"
+    ],
+    "scope": "Branch A and Branch B"
+  },
+  "5": {
+    "band": "lower",
+    "score": 0,
+    "q_not": [
+      "lesion(s)",
+      "wire",
+      "Support"
+    ],
+    "scope": "Branch B on standby"
+  },
+  "6": {
+    "band": "higher",
+    "score": 5,
+    "drivers_not": [
+      "territory of the CCTA lesion"
+    ],
+    "q_has": [
+      "Calcium moderate"
+    ],
+    "scope": "Branch A and Branch B"
+  },
+  "7": {
+    "band": "intermediate",
+    "score": 4,
+    "drivers_not": [
+      "territory of the CCTA lesion"
+    ],
+    "q_not": [
+      "lesion(s)",
+      "Support"
+    ],
+    "scope": "Branch A and Branch B"
+  }
+}
