@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+*.key
+*.mp4
+evidence/
+runs/
+.switch/
+node_modules/
+.DS_Store
+__pycache__/
+*.pyc
+*.local.yaml
+plans/
+briefs/
