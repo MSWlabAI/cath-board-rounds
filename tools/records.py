@@ -28,8 +28,13 @@ def note(post):
     m = RULING.match(post["message"].strip())
     if m: return "ruling", (m.group(2), m.group(1), post["create_at"] / 1000)
 
-def signed(d, pattern, after):
+def signed(d, pattern, after, wait=0):
     """The newest approval whose request text matches `pattern` -> that record if it is an Allow decided after `after` (epoch s), else None.
-    Signing needs this: --approved alone proves nothing."""
-    hits = sorted((a for a in approvals(d) if re.search(pattern, a["what"], re.I)), key=lambda a: a["ts"])
-    return hits[-1] if hits and hits[-1]["decision"].startswith("Allow") and hits[-1]["ts"] >= after else None
+    Signing needs this: --approved alone proves nothing. `wait` (seconds): the Clerk's command can start within a second of the click, before the
+    recorder's next poll has logged the Allow, so a signing caller waits up to that long for it to appear (a Decline or a missing Allow still ends in None)."""
+    end = time.time() + wait
+    while True:
+        hits = sorted((a for a in approvals(d) if re.search(pattern, a["what"], re.I)), key=lambda a: a["ts"])
+        ok = hits[-1] if hits and hits[-1]["decision"].startswith("Allow") and hits[-1]["ts"] >= after else None
+        if ok or time.time() >= end: return ok
+        time.sleep(0.5)

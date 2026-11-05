@@ -3,6 +3,7 @@
 Run by the Clerk after the chair presses Allow once; refuses a missing or stale draft and a dead recorder.
 usage: board_final.py [--out DIR] [--approved] [--briefs DIR]"""
 import os, re, sys, time
+SIGN_WAIT_S = 10  # the recorder polls every 2 s; the Clerk can run this within 1 s of the click
 import board_pdf, html, records, plan
 HERE = os.path.dirname(os.path.realpath(__file__)); ROOT = os.path.join(HERE, "..")
 MAX_AGE_MIN, HEARTBEAT_S = 90, 180
@@ -34,7 +35,7 @@ def main(a):
     if not os.path.exists(src): print("BOARD INCOMPLETE: no board draft recorded; ask the Clerk for a Board draft first"); return 3
     if now - os.path.getmtime(src) > MAX_AGE_MIN * 60: print(f"BOARD INCOMPLETE: the board draft is older than {MAX_AGE_MIN} min; ask for a new Board draft"); return 3
     if not os.path.exists(hb) or now - os.path.getmtime(hb) > HEARTBEAT_S: print("BOARD INCOMPLETE: the room recorder is not running, so the draft may be stale"); return 3
-    if "--approved" in a and not records.signed(d, r"board", os.path.getmtime(src)): print("BOARD INCOMPLETE: no Allow once recorded for the board after its latest draft; not signing"); return 3
+    if "--approved" in a and not records.signed(d, r"board", os.path.getmtime(src), wait=SIGN_WAIT_S): print("BOARD INCOMPLETE: no Allow once recorded for the board after its latest draft; not signing"); return 3
     text = open(src).read().strip(); rows = [l for l in text.splitlines() if re.match(r"^\|\s*\d\d:\d\d", l)]
     if not text.startswith("BOARD —") or not rows: print("BOARD INCOMPLETE: the recorded draft is not a board table"); return 3
     os.makedirs(out, exist_ok=True); md = os.path.join(out, "board-final.md"); pdf = os.path.join(out, "board-final.pdf"); [os.remove(f) for f in (md, pdf) if os.path.exists(f)]; plan.atomic(md, text + "\n")

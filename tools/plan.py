@@ -4,6 +4,7 @@ and the agents' own briefs (--briefs FILE | - | DIR). Outputs plan-case-N.md/.ht
 usage: plan.py CASE [--briefs FILE|-|DIR] [--out DIR] [--pdf] [--approved] [--force]      plan.py --selftest
 With --briefs DIR (the Clerk's flow) it refuses stale or mixed-run briefs and a dead room recorder unless --force."""
 import glob, hashlib, html, json, os, re, subprocess, sys, time
+SIGN_WAIT_S = 10  # the recorder polls every 2 s; the Clerk can run this within 1 s of the click
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import records, angio, pk
 HERE = os.path.dirname(os.path.realpath(__file__)); ROOT = os.path.join(HERE, "..")
@@ -463,7 +464,7 @@ if __name__ == "__main__":
         if "--force" in a: print("PLAN INCOMPLETE: --approved cannot be combined with --force"); sys.exit(3)
         rd = os.path.join(ROOT, "briefs")
         if not os.path.isdir(arg("--briefs") or ""): print("PLAN INCOMPLETE: signing needs the recorder's briefs folder"); sys.exit(3)
-        if not records.signed(rd, rf"\bcase {a[0]}\b", getattr(read_dir, "newest", 0)):
+        if not records.signed(rd, rf"\bcase {a[0]}\b", getattr(read_dir, "newest", 0), wait=SIGN_WAIT_S):
             last = (records.approvals(rd) or [{}])[-1]; print(f"PLAN INCOMPLETE: no Allow once recorded for this plan after its newest brief (last card: {last.get('decision', 'none')} {last.get('what', '')[:50]}); not signing"); sys.exit(3)
     p, files, err = write(a[0], bt, arg("--out", os.path.join(ROOT, "plans")), "--pdf" in a, "--approved" in a)
     print("\n".join(files))
