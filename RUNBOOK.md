@@ -40,3 +40,7 @@ For the operator (not the chair's script). The chair's flow is in `README.md`; t
 | Imaging never answers | Cursor not logged in, or the wrong `agent` on PATH | `which agent`; `cursor-agent login`; relaunch the Console from Terminal |
 | Two cards, or a duplicated brief | two recorders running | `pkill -f tools/recorder.py`, start one |
 | "PARSE WARNINGS" banner on a plan | the packet has a value the plan cannot read | read the banner; fix the packet line or accept that the rule did not run |
+
+## A fresh room's Meds posts without reading the room
+
+Symptom: after a rebuild, Meds' `**Values:**` line shows only eGFR, INR or platelets (Labs's handoff) and never the medication list; `check.py --run` misses the metformin and anticoagulant flags. Fix: post `!reset @meds` in the room (off camera), then rerun one case. Check this before the first take.

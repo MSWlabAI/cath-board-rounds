@@ -117,11 +117,26 @@ shape and wording, not clinical truth.
 
 ## Results
 
-See `runs.csv` (frozen-prompt runs) and `runs-tuning.csv` (earlier runs, made while prompts were still being tuned; kept for transparency, not counted).
-**Day 1, frozen prompts** (hash in `freeze.txt`): 21 live runs, 420 briefs (5 cases through 4 agents, scored against `expected.json`), **0 misses; the last 20 runs in a row clean**, the last 10 of them under the final scorer. 21 format notes (lines over 140 characters; logged, not counted).
-**Day 2, an unrehearsed synthetic day** (`day2.md`, answer key `expected2.json` written before any run, never shown to the agents; different patients, drugs, labs, devices and stock; 3 runs, 60 briefs): the first scoring found **3 misses, all the same line**: Case 4 Meds quoted the packet's own words ("heparin infusion stopped overnight") to show a planted contradiction, and the scorer forbids the word "stop". That was a scorer false positive, not an agent error, so the scorer now allows a forbidden word only when it is the packet's own wording (a real instruction such as "stop the heparin" still fails; there is a self-test). After the fix, with the agents unchanged: **3 runs, 60 of 60 briefs clean**. Both logs are kept (`runs-day2.csv`, `runs-day2b.csv`). Day 2 was scored once more after the scorer change, so it is evidence of generalisation, not a second blind test.
-**Earlier history:** the version before the frozen prompts missed the phrase `TIMI below 3` in 8 briefs because Imaging's trigger wording was ambiguous; the prompt was fixed, not the scorer. Earlier tuning runs: 6 runs, 120 briefs, 0 misses (`runs-tuning.csv`).
-**Not claimed:** the scorer checks shape and wording against an answer key written by the same author, not clinical truth; the full dry run with the human clicks (`python3 tools/dryrun.py`) has been run in pieces (each approval path passed on its own) but not as one recorded pass.
+Everything below is from live runs through the Switch room; every row is in a CSV in this repo. The scorer is `tools/check.py` and the answer keys are `expected*.json`, written before the runs and never shown to the agents. Because the numbers depend on which prompts and which scorer were live, here is the full history, not only the good part.
+
+| Set | Runs | Briefs | Misses | Notes |
+|---|---|---|---|---|
+| Day 1, final prompts (`runs.csv`, hash `8130…`) | 10 | 200 | **0** | 30 format notes (a line over 140 characters; logged, not counted). After the clinical-wording and prompt-contradiction fixes; the scorer now also checks content (see below). The streak restarted at 0 when the prompts changed, then reached 10 in a row. |
+| Day 2, unrehearsed (`runs-day2c.csv`) | 3 | 60 | **0** | Different patients, drugs, labs, devices and stock. |
+| Day 3, unrehearsed with decoys (`runs-day3.csv`) | 3 | 60 | **0** | Values on range edges, a stable-but-abnormal creatinine, a 30 h apixaban dose that must not get a reference tag, a CCTA 45% and negative stress test, a packet with no angiography block, and a packet that tells the agents to call the case safe. |
+| Independence (`tools/independence.py`) | 1 | 4 | pass | Four packet values changed (Cr, K, Hgb, one stenosis); every change showed up in the right brief. |
+
+**What went wrong on the way (kept in the logs):**
+- Earlier prompt versions: `runs.csv` also holds 756 briefs on four older prompt hashes (`595a`, `4764`, `7a39`, and `23c7`, the previous frozen prompts: 420 briefs, 0 misses). The only misses are 8 on `7a39…`, all the phrase `TIMI below 3`, because Imaging's trigger wording was ambiguous. The prompt was fixed, not the scorer. Earlier tuning runs are in `runs-tuning.csv` (160 rows, not counted).
+- Day 2, first scoring (`runs-day2.csv`): 3 misses, all one line, a scorer false positive (the agent quoted the packet's own word "stopped"). The scorer now allows a forbidden word only when it is the packet's own wording. `runs-day2b.csv` is the rescore. Those two day-2 files predate the final prompts.
+- The scorer was tightened midway (every number must be in the packet, lesion ids and triggers must match the lesion row, reference tags must match exactly, a wider list of forbidden words, Unicode look-alikes folded). Rescoring with the final scorer, the 420 day-1 briefs of the previous frozen prompts and all 180 day-2 rows (including the three rows first marked as misses) pass.
+- A day-3 preview run (`runs-day3-preview.csv`, 1 run) was made while the Console still held the old prompts, so its "hash" label is wrong. It missed once (Meds attached a DOAC reference tag at 30 hours). It is kept for transparency and not counted; the final prompts then passed day 3 three times in a row.
+- A fresh room's Meds agent once posted without reading the room (it answered only from Labs's handoff) and missed every medication flag; resetting the agent fixed it. The 24 rows that run logged were removed from `runs.csv` before the streak was recounted. See `RUNBOOK.md`.
+
+**What these numbers do and do not show:**
+- Repeats give the same text. Within a set, every case and agent produced the same brief in all of its runs, so the 200 day-1 briefs are 20 distinct briefs seen 10 times each, not 200 independent samples. The independence run is the evidence that the briefs follow the packet; the day-2 and day-3 sets are the evidence that the wording generalises to new data.
+- The scorer checks shape, wording and grounding against an answer key written by the same author. It does not check clinical truth.
+- The full filmed flow (`tools/dryrun.py`, with the human Allow and Decline clicks) has been run in pieces, each approval path on its own, and is rerun with the author before filming.
 
 ## Setup (what this entry ran on, one Mac)
 
@@ -151,6 +166,7 @@ The author's preflight (`prep_check.sh`) lives outside this repo; `RUNBOOK.md` l
 - Pre-window helpers are not in this repo (see Disclosures).
 - Signing is bound to a recorded Allow decided after the newest brief (`plan.py` and `board_final.py` refuse otherwise), but the approval is matched by the card's description text, which the Clerk model writes.
 - Whether Switch restricts which agents can address the Clerk beyond `owner-agents` is not verified here.
+- A new room's agents can start without reading the room (a Meds reset fixes it); `RUNBOOK.md` has the check.
 - The likelihood weights, prep rules and Imaging triggers are the author's proposals, not derived from data and not clinician-reviewed.
 
 ## Disclosures
