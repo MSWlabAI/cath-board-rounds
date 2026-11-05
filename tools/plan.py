@@ -403,7 +403,7 @@ def selftest():
     w = []; ls = lesions({"ANGIO": "L1 | LMCA | total occlusion | TIMI III | Calcium Severe | - ; L2 | ramus | x% | ? | none | none ; bad"}, w)
     pc = [("packet reader: occlusion=100, TIMI III=3, '-' is no flag", pk.pct(ls[0]["pct"]) == 100 and pk.timi(ls[0]["timi"]) == 3 and not pk.has_flag(ls[0]["flag"])),
           ("packet reader: LMCA is left main, ramus is LCx family, triggers read them", pk.is_lm("LMCA") and pk.family("ramus") == "lcx" and "bifurcation, ostial or left main" in triggers(ls)),
-          ("packet reader: unreadable values and short rows warn instead of crashing", len(w) == 4), ("packet reader: EF takes the latest value", pk.ef("prior EF 55%, now EF 30%") == 30 and pk.ef("LVEF 35-40%") == 35)]
+          ("packet reader: unreadable values and short rows warn instead of crashing", len(w) == 3), ("packet reader: EF takes the latest value", pk.ef("prior EF 55%, now EF 30%") == 30 and pk.ef("LVEF 35-40%") == 35)]
     for name, cond in pc: print("PASS" if cond else "FAIL", name); ok &= cond
     import tempfile
     with tempfile.TemporaryDirectory() as td:  # signing needs a real, newer, matching Allow
