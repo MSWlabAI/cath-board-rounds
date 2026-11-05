@@ -58,10 +58,10 @@ Angio findings flagged: 3 of 4 (calcium moderate or severe; TIMI flow below 3; m
 ## Summary and approvals
 - Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 2 · Meds 2 · Equipment 0
-- This plan: Allow once by the chair on the Switch card, 2026-11-04 20:47
+- This plan: Allow once by the chair on the Switch card, 2026-11-04 20:48
 
 Contrast ratio: 7.1 (proposed cap 3.7; contrast mL ÷ eGFR) · eGFR flagged unreliable in the packet
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: APPROVED by the chair**
-_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py 50f00be1c6 · day.md · packet id n/a_
+_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py c9468ccb46 · day.md · packet id n/a_

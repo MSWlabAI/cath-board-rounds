@@ -60,7 +60,7 @@ def svg(ls, title=True):
     for l in ls:
         key = key_for(l["vessel"])
         if not key: continue
-        seg, t0 = PLACE[key]; n = pk.pct(l["pct"]) or 0; dips.setdefault(seg, []).append((t0, min(.93, n / 100), .075))
+        seg, t0 = PLACE[key]; n = pk.pct(l["pct"]) or 0; dips.setdefault(seg, []).append((t0, min(.97, n / 100), .075))
         if "Medina 1,1,1" in l["flag"]:  # true bifurcation: disease runs into the proximal LAD and LCx
             dips.setdefault("lad1", []).append((.12, .5, .12)); dips.setdefault("lcx1", []).append((.12, .5, .12))
         timi = pk.timi(l["timi"]); timi = 3 if timi is None else timi

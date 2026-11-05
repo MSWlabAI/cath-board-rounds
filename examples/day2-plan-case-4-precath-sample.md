@@ -52,4 +52,4 @@ Contrast ratio: 1.3 (proposed cap 3.7; contrast mL ÷ eGFR)
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py 50f00be1c6 · day2.md · packet id n/a_
+_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py c9468ccb46 · day2.md · packet id n/a_

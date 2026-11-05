@@ -299,13 +299,13 @@ def figure_html(p):
     if not ls: return ""
     e = html.escape; cards = ""; cta = not p["lesions"]
     for l in ls:
-        k = angio.key_for(l["vessel"]); seg = angio.SEG[angio.PLACE[k][0]][0] if k else "?"; timi = pk.timi(l["timi"]); timi = 3 if timi is None else timi
-        if cta: cards += f"<div class=lc><b>{e(l['id'])} · {e(l['vessel'])}</b> <span>(AHA segment {e(seg)})</span><br>CCTA estimate {e(l['pct'])} · {e(l['calcium'])} · not yet confirmed by angiography</div>"; continue
+        k = angio.key_for(l["vessel"]); seg = angio.SEG[angio.PLACE[k][0]][0] if k else "not placed"; timi = pk.timi(l["timi"]); timi = 3 if timi is None else timi
+        if cta: cards += f"<div class=lc><b>{e(l['id'])} · {e(l['vessel'])}</b> <span>({'AHA segment ' + e(seg) if k else 'not drawn on the figure: vessel not recognised'})</span><br>CCTA estimate {e(l['pct'])} · {e(l['calcium'])} · not yet confirmed by angiography</div>"; continue
         note = "normal filling" if timi == 3 else ("slow filling: the distal vessel is drawn fainter" if timi == 2 else "poor filling: the distal vessel is drawn very faint")
-        cards += (f"<div class=lc><b>{e(l['id'])} · {e(l['vessel'])}</b> <span>(AHA segment {e(seg)})</span><br>{e(l['pct'])} stenosis · {e(l['timi'])} ({note}) · calcium {e(l['calcium'].replace('calcium ', ''))} · flag {e(l['flag'])}</div>")
+        cards += (f"<div class=lc><b>{e(l['id'])} · {e(l['vessel'])}</b> <span>({'AHA segment ' + e(seg) if k else 'not drawn on the figure: vessel not recognised'})</span><br>{e(l['pct'])} stenosis · {e(l['timi'])} ({note}) · calcium {e(l['calcium'].replace('calcium ', ''))} · flag {e(l['flag'])}</div>")
     return (f"<section style='break-before:page'><h2>{'Pre-cath CCTA findings (synthetic, not yet confirmed by angiography)' if cta else 'Angiographic findings (synthetic)'}</h2><div class=fig>{angio.svg(ls)}</div>{cards}"
             "<p class=def>Drawn from the angio lines in the packet by tools/angio.py: right-dominant tree, anterior view, AHA segment numbers, lumen narrowed to the stated percentage, calcium shown as bright specks, "
-            "distal filling dimmed when TIMI flow is below 3. A teaching diagram, not an image of any patient and not to scale.</p></section>")
+            "distal filling dimmed when TIMI flow is below 3. Solid red ring = stenosis of 70% or more; dashed amber ring = under 70%, or a CCTA estimate not yet confirmed. A Medina 1,1,1 flag is drawn as a narrowing of about half the proximal LAD and LCx. A teaching diagram, not an image of any patient and not to scale.</p></section>")
 
 def htm(p):
     e = html.escape; B = lambda s: re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", e(s)); th = p["th"]
