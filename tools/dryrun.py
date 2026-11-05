@@ -25,11 +25,12 @@ def main(a):
     if "--skip-briefs" not in a:
         for c in "12345":
             r = board.collect(c)
+            if c == "2": r2 = {ag: (x[1] if x else "") for ag, x in r.items()}
             for ag, x in r.items():
                 miss, fmt = check.score(c, ag, x[1]) if x else (["timeout"], [])
                 rec(f"brief case {c} {ag}", not miss, "; ".join(miss) or (f"{x[0]:.0f}s" + (f" format: {'; '.join(fmt)}" if fmt else "")))
     t, out = clerk_say(tok, ch, user, "Review case 2", r"\*\*🧾 CASE 2 REVIEW", 150); sheet = out[-1]["message"] if out else ""
-    m = check.score_review("2", sheet) if t else ["timeout"]; rec("case review sheet is structured and faithful", not m, "; ".join(m) or f"{t:.0f}s")
+    m = check.score_review("2", sheet, locals().get("r2")) if t else ["timeout"]; rec("case review sheet is structured and faithful", not m, "; ".join(m) or f"{t:.0f}s")
     for i, line in enumerate([packet.DEFAULT_RULINGS[0], packet.DEFAULT_RULINGS[3]]):
         t, out = clerk_say(tok, ch, user, line, r"RULING RECEIVED", 90); rec(f"ruling echo {i + 1}", bool(t) and out[-1]["message"].strip() == "RULING RECEIVED: " + line, f"{t:.0f}s" if t else "timeout")
     rul = "RULINGS\n" + "\n".join(packet.DEFAULT_RULINGS)

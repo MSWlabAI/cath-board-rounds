@@ -115,7 +115,11 @@
     "\\b(should|must|recommend\\w*|suggest\\w*|advis\\w*|consider)\\b",
     "\\b(rank|prioriti[sz]e)\\w*",
     "\\b(withhold|discontinu\\w*|titrat\\w*)\\b",
-    "\\b(hold|reduce|increase|decrease|limit)\\s+(it|the|contrast|to|by)\\b"
+    "\\b(hold|reduce|increase|decrease|limit)\\s+(it|the|contrast|to|by)\\b",
+    "\\b(hold|holding|held)\\s+off\\b",
+    "\\b(defer|deferr\\w*|postpone\\w*|delay|delaying|skip|skipping|avoid\\w*|pause|pausing)\\b(?!\\s*$)",
+    "\\b(proceed\\w*|best to|ought to|needs? to|urge\\w*|better to|safer to|switch\\w*\\s+to|substitut\\w*|instead of)\\b",
+    "\\bwithh[eo]ld\\w*\\b"
   ],
   "forbid_equipment_cases_2_5": [
     "IVUS"

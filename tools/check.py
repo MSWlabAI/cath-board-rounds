@@ -4,7 +4,7 @@ usage: check.py --selftest                 offline, no Switch, no model
        check.py --run [CASE ...] [--n N]    live: post each case to the room, score, append to runs.csv (with the prompt hash)
        check.py --streak                    consecutive clean runs at the end of runs.csv that used the CURRENT prompts
 A MISS (missing planted flag, extra flag, unrecognised line, wrong handoff, forbidden word, timeout) resets the streak; a FORMAT breach is logged only."""
-import argparse, csv, hashlib, json, os, re, sys, time
+import argparse, csv, hashlib, json, os, re, sys, time, unicodedata
 HERE = os.path.dirname(os.path.abspath(__file__)); EXP = json.load(open(os.environ.get("EXPECTED_FILE") or os.path.join(HERE, "..", "expected.json")))  # EXPECTED_FILE: score another day against its own key
 CSV = os.environ.get("RUNS_CSV") or os.path.join(HERE, "..", "runs.csv")  # RUNS_CSV: keep another day's runs out of the main log
 COLS = ["ts", "run", "case", "agent", "secs", "miss", "format", "prompt_hash", "brief"]
@@ -19,9 +19,39 @@ def packet_norm():
         p = os.environ.get("DAY_FILE") or os.path.join(HERE, "..", "day.md"); _PNORM = " ".join(re.findall(r"\w+", open(p).read().lower()))
     return _PNORM
 
+_DAY = None
+def case_block(case):
+    """The packet text one case's agents were given: the CASE block plus the STOCK section."""
+    global _DAY
+    if _DAY is None: _DAY = open(os.environ.get("DAY_FILE") or os.path.join(HERE, "..", "day.md")).read()
+    m = re.search(rf"^(CASE {case} .*?)(?=\nCASE \d |\n## STOCK)", _DAY, re.S | re.M)
+    return (m.group(1) if m else "") + "\n" + (_DAY.split("## STOCK")[1].split("\n## ")[0] if "## STOCK" in _DAY else "")
+
+NUM = re.compile(r"\d+(?:\.\d+)?")
+def grounding(case, body):
+    """Content checks a shape check cannot do: every number in the brief is in the packet (a derived value must sit in `(calc: ...)`), and every lesion id and its trigger match the packet's own lesion row."""
+    blk = case_block(case); known = set(NUM.findall(blk)); out = []
+    prose = re.sub(r"ref:[^·|\n]*|\(calc:[^)]*\)|Case \d", "", body)
+    bad = sorted({n for n in NUM.findall(prose) if n not in known})
+    if bad: out.append("number not in the packet: " + ", ".join(bad[:4]))
+    les = {}
+    for part in re.split(r"\s*;\s*", (re.search(r"^ANGIO[^:]*:\s*(.*)$", blk, re.M) or [None, ""])[1]):
+        c = [x.strip() for x in part.split("|")]
+        if len(c) == 6: les[c[0]] = c
+    for l in body.splitlines():
+        trig = re.sub(r"^🚩\s*\**FLAG:\**\s*", "", l).split(" · ")[0].strip().lower()  # the trigger words only, not the vessel name that follows
+        if not l.startswith("🚩") or not re.match(r"calcium|timi below 3|bifurcation|ostial", trig): continue
+        for lid in set(re.findall(r"\bL\d+\b", l)):
+            if lid not in les: out.append(f"lesion {lid} is not in the packet"); continue
+            c = les[lid]
+            if trig.startswith("calcium") and not re.search(r"moderate|severe", c[4]): out.append(f"{lid} has no moderate or severe calcium in the packet")
+            if trig.startswith("timi below 3") and (re.search(r"\d", c[3]) or [None])[0] in (None, "3"): out.append(f"{lid} has TIMI 3 in the packet")
+            if re.match(r"bifurcation|ostial", trig) and c[5].lower() in ("none", "-", ""): out.append(f"{lid} has no bifurcation or ostial flag in the packet")
+    return out
+
 def score(case, agent, text):
     """-> (misses, format_issues) for one brief."""
-    exp = EXP[str(case)][agent]; lim = EXP["limits"][agent]; text = re.sub(r"^\s*(?:@\w+\s+)+", "", text or "")  # drop the send tool's @mentions
+    exp = EXP[str(case)][agent]; lim = EXP["limits"][agent]; text = re.sub(r"^\s*(?:@\w+\s+)+", "", unicodedata.normalize("NFKC", text or "").replace("\u200b", "").replace("\u00ad", ""))  # drop the send tool's @mentions; fold lookalike and zero-width characters
     lines = [l.strip() for l in text.splitlines() if l.strip()]; miss, fmt = [], []
     if not lines: return ["no brief"], []
     if not re.match(rf"\**\[{agent.upper()} .{{1,3}} Case {case}\]", lines[0], re.I): miss.append("header")
@@ -40,7 +70,8 @@ def score(case, agent, text):
     if exp.get("none") and flags: miss.append(f"false flag: {flags[0][:60]}")
     for l in flags:  # a ref tag must be one of the card's tags: no invented citations
         for tag in re.findall(r"ref:\s*([^·|]+?)\s*(?:·|$)", l):
-            if not any(tag.strip().startswith(a) for a in EXP["allowed_refs"]): miss.append(f"unknown reference: {tag.strip()[:30]}")
+            for one in re.split(r"\s*[,;]\s*|\s+and\s+", tag.strip().rstrip(".")):
+                if one not in EXP["allowed_refs"]: miss.append(f"unknown reference: {one[:30]}")
     miss += [f"missing taught reference /{rx}/" for rx in exp.get("ref", []) if not any("ref:" in l and rx in l for l in flags)]
     miss += [f"missing planted flag /{rx}/" for rx in exp.get("flag", []) if not any(re.search(rx, l, re.I) for l in flags)]
     if len(flags) > lim["flags"]: miss.append(f"{len(flags)} flags (max {lim['flags']}): flag-everything")
@@ -52,11 +83,14 @@ def score(case, agent, text):
         for m in re.finditer(rx, body, re.I):
             ctx = " ".join(re.findall(r"\w+", body[max(0, m.start() - 40):m.end()].lower())[-3:])
             if ctx not in packet_norm(): miss.append(f"forbidden /{rx}/"); break
+    miss += grounding(case, "\n".join(lines[1:]))
+    extra = [l for l in flags if exp.get("flag") and not any(re.search(rx, l, re.I) for rx in exp["flag"])]
+    if extra: fmt.append(f"{len(extra)} flag line(s) beyond the planted ones (logged, not a miss): {extra[0][:50]}")
     if len(lines) > lim["lines"]: fmt.append(f"{len(lines)} lines (max {lim['lines']})")
     if any(len(l) > EXP["max_line_chars"] for l in lines): fmt.append("line > %d chars" % EXP["max_line_chars"])
     return miss, fmt
 
-def score_review(case, text):
+def score_review(case, text, briefs=None):
     """Score the Clerk's `Review case N` sheet: right header, one row per agent, each agent's planted flags quoted, handoff column, ruling choices, no judging words."""
     miss = []; t = text or ""; rows = {a: next((l for l in t.splitlines() if re.match(rf"^\|\s*{a}\b", l, re.I)), "") for a in ("imaging", "labs", "meds", "equipment")}
     if not re.search(rf"CASE {case} REVIEW", t): miss.append("review header")
@@ -70,7 +104,17 @@ def score_review(case, text):
         if rows[a] and h not in rows[a]: miss.append(f"{a} row lacks handoff '{h}'")
     if "the ruling is yours" not in t: miss.append("missing 'the ruling is yours'")
     miss += [f"missing ruling choice {lab}" for lab in ("NO FLAGS RAISED", "REVIEWED WITH NOTES", "ON HOLD") if lab not in t]
-    miss += [f"forbidden /{rx}/" for rx in EXP["forbid_any"] if re.search(rx, "\n".join(l for l in t.splitlines() if l.startswith("|")), re.I)]
+    boiler = ("**🧾", "Agents flagged only", "**Chair, rule")  # fixed wording of the sheet itself; everything else is checked
+    body = "\n".join(l for l in t.splitlines() if l.strip() and not l.startswith(boiler) and not re.match(r"^\|\s*(Agent\b|-)", l))
+    for rx in EXP["forbid_any"]:
+        for m in re.finditer(rx, body, re.I):
+            if " ".join(re.findall(r"\w+", body[max(0, m.start() - 40):m.end()].lower())[-3:]) not in packet_norm(): miss.append(f"forbidden /{rx}/"); break
+    for a, b in (briefs or {}).items():  # faithful: every flag the agent raised is quoted word for word in its row, and nothing else is claimed
+        row = re.sub(r"\s+", " ", rows.get(a, ""))
+        for l in (x.strip() for x in (b or "").splitlines() if x.strip().startswith("🚩")):
+            q = re.sub(r"\s+", " ", re.sub(r"^🚩\s*\**FLAG:\**\s*", "", l)).strip()
+            if q not in row: miss.append(f"{a} row does not quote the flag: {q[:40]}")
+        if not any(x.strip().startswith("🚩") for x in (b or "").splitlines()) and row and "nothing flagged" not in row and "MISSING" not in row: miss.append(f"{a} row shows flags the agent did not raise")
     return miss
 
 def prompt_hash():
@@ -109,10 +153,21 @@ def selftest():
     bad("handoff wrong target", "2", "imaging", flags=["calcium moderate", "TIMI below 3", "multivessel"], last="🔁 **HANDOFF → Meds:** x · your turn for Case 2")
     bad("meds must not hand off", "4", "meds", extra=["🔁 **HANDOFF → Equipment:** x · your turn for Case 4"]); bad("case 5 handoff lacks furosemide", "5", "labs", flags=["K 3.2"])
     bad("no header", "9", "imaging", extra=["MISSING: ANGIO block"], head="MISSING: ANGIO block"); bad("flag on no-angio case", "9", "imaging", flags=["x"], extra=["MISSING: ANGIO block"])
+    ok_labs = ["Cr 2.7 vs 2.2 · ref: KDIGO AKI", "eGFR 24 vs 170 mL · ref: Gurm 2011 ratio"]
+    bad("content: a number that is not in the packet", "2", "labs", flags=["Cr 2.7 vs 2.2 · ref: KDIGO AKI", "eGFR 24 vs 999 mL · ref: Gurm 2011 ratio"]); bad("content: invented lab value", "2", "labs", flags=ok_labs, extra=["**Note:** K 9.9"])
+    bad("content: calcium flagged on the wrong lesion", "2", "imaging", flags=["calcium moderate · L2 mid-LCx 70%", "TIMI below 3 · L1", "multivessel · L1, L2"]); bad("content: lesion id not in the packet", "2", "imaging", flags=["calcium moderate · L9", "TIMI below 3 · L1", "multivessel · L1, L2"])
+    bad("content: TIMI flag on a TIMI 3 lesion", "2", "imaging", flags=["calcium moderate · L1", "TIMI below 3 · L2", "multivessel · L1, L2"])
+    good("2", "labs", flags=ok_labs)
+    for w in ("hold off on the case", "defer the case", "proceed with the case", "best to wait", "it needs to be cancelled", "avoid contrast", "switch to a smaller dose", "pause metformin for 48 h", "sh\u200bould"): bad("widened forbidden: " + w, "2", "labs", flags=ok_labs, extra=["**Note:** " + w])
+    bad("reference must match a tag exactly, not by prefix", "2", "labs", flags=["Cr 2.7 vs 2.2 · ref: KDIGO AKI is 99", "eGFR 24 vs 170 mL · ref: Gurm 2011 ratio"])
     f = score("4", "meds", sample("meds", "4", extra=["✅ ok", "x" * 150]))[1]; ok &= bool(f); print("PASS" if f else "FAIL", "long line logged as format")
     f = score("2", "labs", sample("labs", "2", flags=["Cr 2.7 vs 2.2", "eGFR 24 vs 170 mL"], extra=["✅ a", "✅ b", "✅ c"]))[1]; ok &= bool(f); print("PASS" if f else "FAIL", "too many lines logged as format")
     rv = "**🧾 CASE 2 REVIEW** · 74M · 09:30 · PCI mid-LAD\n\n| Agent | Flags, quoted from its brief | Handoff |\n|---|---|---|\n| Imaging | calcium moderate · L1 ; TIMI below 3 · L1 ; multivessel · L1, L2 | → Equipment |\n| Labs | Cr 2.7 (2.2 yesterday) ; eGFR 24 · Est. contrast 170 mL | → Meds |\n| Meds | metformin on the list · contrast yesterday | answered the handoff |\n| Equipment | ✅ nothing flagged | answered the handoff |\n\nAgents flagged only; the ruling is yours.\n**Chair, rule this case:** NO FLAGS RAISED · REVIEWED WITH NOTES · ON HOLD"
     m = score_review("2", rv); ok &= not m; print("PASS" if not m else f"FAIL review good: {m}")
+    bfs = {"imaging": "**[IMAGING — Case 2]**\n🚩 **FLAG:** calcium moderate · L1\n🚩 **FLAG:** TIMI below 3 · L1\n🚩 **FLAG:** multivessel · L1, L2", "labs": "**[LABS — Case 2]**\n🚩 **FLAG:** Cr 2.7 (2.2 yesterday)\n🚩 **FLAG:** eGFR 24 · Est. contrast 170 mL", "meds": "**[MEDS — Case 2]**\n🚩 **FLAG:** metformin on the list", "equipment": "**[EQUIPMENT — Case 2]**\n✅ Nothing flagged"}
+    m = score_review("2", rv, bfs); good_f = not m; ok &= good_f; print("PASS" if good_f else f"FAIL review faithful: {m}")
+    for why, bad_rv in (("an invented flag in the Equipment row", rv.replace("| Equipment | ✅ nothing flagged", "| Equipment | IVUS 0 on hand")), ("a changed value", rv.replace("Cr 2.7", "Cr 9.9")), ("advice outside the table", rv + "\nYou should cancel the case.")):
+        m = score_review("2", bad_rv, bfs); ok &= bool(m); print("PASS" if m else "FAIL faithful review not caught:", why)
     for why, bad_rv in (("dropped a planted flag", rv.replace("metformin", "x")), ("agent row missing", rv.replace("| Equipment |", "| Other |")), ("judging word", rv.replace("calcium moderate", "you should add calcium")), ("handoff column wrong", rv.replace("→ Meds", "→ Labs")), ("no ruling choices", rv.replace("ON HOLD", ""))):
         m = score_review("2", bad_rv); ok &= bool(m); print("PASS" if m else "FAIL review not caught:", why)
     import records, scenarios_test
