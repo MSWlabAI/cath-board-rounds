@@ -2,7 +2,7 @@
 
 > **Synthetic teaching content. Not clinical advice. Not a medical device. Not for clinical use.**
 > Independent project; not affiliated with, and not representing, any employer or institution.
-> The chair appears under a pseudonym (`chargenurse`).
+> The chair appears under a pseudonym (`chargenurse`). No real patient data is used anywhere; every packet is synthetic. Packet text is sent to the model providers the agents run on (Anthropic, xAI).
 
 One Switch room on Mattermost for a cath lab's morning planning. A human **chair** pastes a case packet and names two
 agents. The agents only **flag** conflicts they can quote from the packet, and pass work to each other in a short relay.
@@ -10,6 +10,20 @@ They never decide, dose, substitute or reschedule. The chair rules. A **Clerk** 
 writes the final board or a plan PDF **only after the chair presses Allow once on an approval card**.
 
 Hackathon entry: Flip the Switch (WeMakeDevs + SandboxAQ), Track 01, Best Business Workflow.
+
+## Why Switch is central
+
+The product is the room, not a script around a model: take Switch away and the relay, the access rule and the signature step all have to be rebuilt.
+
+| Switch feature | What it does here | What you would otherwise build |
+|---|---|---|
+| Teammate handoff (`@agent` post starts that agent) | Imaging's one-line handoff starts Equipment; Labs' starts Meds; the chair names only two agents | an orchestrator process that routes messages and tracks who answers whom |
+| `owner-agents` addressing | only the chair can address agents or the Clerk | auth and routing checks in every agent |
+| Approval card (owner only; Allow once / Decline) | the board and the plan PDF are written only after the chair presses Allow; Decline writes nothing | a custom confirmation UI plus a record of who approved what |
+| One bot account per agent | each specialist is a named participant; the recorder accepts a brief only from the account its header names | message-tagging conventions and trust in them |
+| The shared room | one packet, one record, one place to rule, plus `!interrupt` / `!reset` | copy and paste between tools |
+
+Switch delivers the handoff post and enforces who may address whom; what the agents say is their prompt.
 
 ## Three kinds of patient, one workflow
 
@@ -67,18 +81,6 @@ room's owner) can address the agents or the Clerk (`addressing: owner-agents`), 
 A local qwen3.6 agent (OpenCode) was tried as a room agent and dropped: it looped on its send tool and often replied in plain text that never
 reached the room. qwen3.6 is used only by `tools/localcheck.py`, an optional report-only second reader.
 
-## Why Switch is central
-
-| Switch feature | What it does here | Without it |
-|---|---|---|
-| `@`-addressing, `owner-agents` | only the chair's named agents answer; a teammate's handoff post starts the next agent | every agent talks on every message |
-| Approval card (owner only) | the board and the plan are written only after Allow once; Decline writes nothing | the Clerk could write unreviewed |
-| One bot account per agent | each specialist is a named participant, and the recorder accepts a brief only from its own agent's account | one blob of text |
-| The shared room | one packet, one record, one place to rule | copy and paste between tools |
-| `!interrupt`, `!reset` | stop a stuck turn, clear a stale card | stuck sessions |
-
-Switch delivers the handoff post and enforces who may address whom; what the agents say is their prompt.
-
 ## What the agents are told
 
 Each agent has standing rules: a brief format, one domain, and what it must not do (dose, rate, substitute, rank cases, name a strategy or
@@ -128,16 +130,16 @@ See `runs.csv` (frozen-prompt runs) and `runs-tuning.csv` (earlier runs, made wh
 2. **Mattermost:** `docker run -d --name mattermost -p 8065:8065 mattermost/mattermost-preview`; create a team (`cathlab`) and the chair user (`chargenurse`) with
    `docker exec mattermost mmctl --local ...`; enable bot accounts; **disable collapsed reply threads** so approval cards stay visible:
    `mmctl --local config set ServiceSettings.CollapsedThreads disabled`.
-3. **Agent folders:** `python3 tools/sync_prompts.py --write` creates `~/agents/cath-*/CLAUDE.md` (and `AGENTS.md` for the Cursor agent) and the import file
+3. **Folders:** `mkdir -p briefs plans` in the repo (both are git-ignored). **Agent folders:** `python3 tools/sync_prompts.py --write` creates `~/agents/cath-*/CLAUDE.md` (and `AGENTS.md` for the Cursor agent) and the import file
    `~/agents/cath-board-rounds-final.yaml`. In the Clerk's folder link the repo: `ln -s <repo>/tools ~/agents/cath-clerk/tools; ln -s <repo>/briefs ~/agents/cath-clerk/briefs`.
 4. **Room:** in the Switch Console upload `cath-board-rounds-final.yaml` as a template and use **Use template** (not "New room": a room made that way has no
    human member, so the agents' replies fail). The room's channel slug gets a random suffix; set `ROOM` to it.
-5. **Environment:** copy `.env.example` to a file outside the repo, fill it in, and point `MM_ENV_FILE` at it (`MM_TEAM`, `ROOM`, the chair user and password).
+5. **Environment:** copy `.env.example` to a file outside the repo, fill it in, and point `MM_ENV_FILE` at it (`MM_TEAM`, `ROOM`, the chair user and password). Create the chair user with `docker exec mattermost mmctl --local user create --username chargenurse --email <you@example.com> --password <pw>` and add it to the team and to the room. Optional overrides: `DAY_FILE`, `EXPECTED_FILE`, `RUNS_CSV` (score another day), `AGENTS_DIR` (where the agent folders live), `CHROME` (path to Chrome), `COPY=1` (clipboard), `RECORDS_DIR` (where plan.py reads rulings and approvals).
 6. **Helpers (keep running):** `python3 tools/recorder.py` (saves each agent's brief for the Clerk's plan command) and `python3 tools/callback_forward.py` (lets the card
    buttons reach the Switch server; typed answers work without it).
 7. **Check and pin:** `python3 tools/pin_intro.py`, then run the preflight and `python3 tools/sync_prompts.py --console`.
 
-The author's preflight (`prep_check.sh`) lives outside this repo and checks the helpers, the symlinks, the Console's PATH and prompt drift.
+The author's preflight (`prep_check.sh`) lives outside this repo; `RUNBOOK.md` lists what it checks and the manual steps. Tested on one Mac (macOS, Apple silicon): the clipboard and Chrome paths are macOS-specific, and package versions are not pinned (Python 3.14; Mattermost `mattermost-preview`, Claude Code and the Cursor CLI as installed on 2026-11-04).
 
 ## Known limits
 
@@ -147,6 +149,9 @@ The author's preflight (`prep_check.sh`) lives outside this repo and checks the 
 - The Cursor agent runs the Cursor CLI's default model on the machine (Grok on the author's); pinning a model per agent is not verified.
 - The recorder accepts a brief only from the agent account named in its header, and only the chair (the room's owner) can address the agents or the Clerk.
 - Pre-window helpers are not in this repo (see Disclosures).
+- Signing is bound to a recorded Allow decided after the newest brief (`plan.py` and `board_final.py` refuse otherwise), but the approval is matched by the card's description text, which the Clerk model writes.
+- Whether Switch restricts which agents can address the Clerk beyond `owner-agents` is not verified here.
+- The likelihood weights, prep rules and Imaging triggers are the author's proposals, not derived from data and not clinician-reviewed.
 
 ## Disclosures
 
