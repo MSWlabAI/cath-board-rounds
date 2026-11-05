@@ -102,6 +102,7 @@ Then `@clerk Case 2 = REVIEWED WITH NOTES ; contrast vs eGFR ; operator to confi
 ```
 ./check.sh --run --n 10          # live: all five cases through four agents; scored; appended to runs.csv with the prompt hash
 python3 tools/check.py --streak  # consecutive clean runs on the CURRENT prompts
+DAY_FILE=day2.md EXPECTED_FILE=expected2.json RUNS_CSV=runs-day2.csv python3 tools/check.py --run --n 3   # the unrehearsed day 2
 python3 tools/scenarios_live.py  # the scenario library through the live agents (flags derived from each packet)
 python3 tools/dryrun.py          # smoke test of the whole filmed flow (three human clicks)
 python3 tools/sync_prompts.py --console   # template vs agent folders vs the Console's stored copies; prints SHA-256 per prompt
@@ -115,10 +116,10 @@ shape and wording, not clinical truth.
 ## Results
 
 See `runs.csv` (frozen-prompt runs) and `runs-tuning.csv` (earlier runs, made while prompts were still being tuned; kept for transparency, not counted).
-**Frozen prompts** (hash in `freeze.txt`): 11 live runs, 220 briefs (5 cases through 4 agents, scored against `expected.json`), **0 misses, and the last 10 runs in a row clean**; 11 format notes (lines over 140 characters, logged and not counted).
-**The version before** (Imaging's trigger wording not yet pinned): 11 runs, 8 briefs missed the phrase `TIMI below 3` on Case 2 because Imaging wrote only the TIMI value. The finding was right and the prompt was ambiguous, so the prompt was fixed; the scorer was not loosened.
-**Earlier versions**, while prompts were being tuned: 6 runs, 120 briefs, 0 misses (`runs-tuning.csv` and earlier rows of `runs.csv`).
-Not yet run on the frozen prompts in this README's numbers: the full dry run with the three human clicks (`python3 tools/dryrun.py`), and a second, unrehearsed synthetic day. The scorer checks shape and wording against an answer key written by the same author, not clinical truth.
+**Day 1, frozen prompts** (hash in `freeze.txt`): 21 live runs, 420 briefs (5 cases through 4 agents, scored against `expected.json`), **0 misses; the last 20 runs in a row clean**, the last 10 of them under the final scorer. 21 format notes (lines over 140 characters; logged, not counted).
+**Day 2, an unrehearsed synthetic day** (`day2.md`, answer key `expected2.json` written before any run, never shown to the agents; different patients, drugs, labs, devices and stock; 3 runs, 60 briefs): the first scoring found **3 misses, all the same line**: Case 4 Meds quoted the packet's own words ("heparin infusion stopped overnight") to show a planted contradiction, and the scorer forbids the word "stop". That was a scorer false positive, not an agent error, so the scorer now allows a forbidden word only when it is the packet's own wording (a real instruction such as "stop the heparin" still fails; there is a self-test). After the fix, with the agents unchanged: **3 runs, 60 of 60 briefs clean**. Both logs are kept (`runs-day2.csv`, `runs-day2b.csv`). Day 2 was scored once more after the scorer change, so it is evidence of generalisation, not a second blind test.
+**Earlier history:** the version before the frozen prompts missed the phrase `TIMI below 3` in 8 briefs because Imaging's trigger wording was ambiguous; the prompt was fixed, not the scorer. Earlier tuning runs: 6 runs, 120 briefs, 0 misses (`runs-tuning.csv`).
+**Not claimed:** the scorer checks shape and wording against an answer key written by the same author, not clinical truth; the full dry run with the human clicks (`python3 tools/dryrun.py`) has been run in pieces (each approval path passed on its own) but not as one recorded pass.
 
 ## Setup (what this entry ran on, one Mac)
 

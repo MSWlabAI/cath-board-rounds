@@ -9,7 +9,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 - Symptoms: typical angina, exertional dyspnea
 - CCTA L1 distal RCA 60% · calcium moderate
 - Likelihood band (proposed points rule): higher (8 points; not a probability)
-  - CCTA 60% (L1 distal RCA) (+1)
+  - CCTA 60%, intermediate stenosis (L1 distal RCA; E6) (+1)
   - stress test positive (MPI, inferior wall) (+2)
   - typical angina (+1)
   - the positive stress result (inferior wall) is in the territory of the CCTA lesion (+2)
@@ -20,7 +20,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 | Lesion | Vessel | Stenosis | TIMI | Calcium | Flag |
 |---|---|---|---|---|---|
 
-Complexity triggers: 0 of 4
+Angio findings flagged: 0 of 4
 
 ## Rules that fired
 - Likelihood band (proposed rule, 8 points): higher. A label from a points rule, not a probability. Chair to decide; equipment is staged for both branches below.
@@ -50,7 +50,7 @@ Complexity triggers: 0 of 4
 - Question for the chair: Calcium moderate on L1 distal RCA (CCTA): the packet names no calcium-modification device or intravascular imaging catheter. Chair to decide whether any is needed.
 - Question for the chair: No wire is named in the packet's device lines: chair to confirm.
 - Question for the chair: No balloon is named for the PCI branch: chair to confirm.
-- Question for the chair: EF 35% in the packet. Support devices on the shelf: Impella CP 2. Chair to decide whether support is needed.
+- Question for the chair: EF 35% in the packet. The 2015 SCAI/ACC consensus names high-risk PCI (multivessel, left main, last conduit) with severely reduced EF but gives no EF cutoff (E10). Support devices on the shelf: Impella CP 2. Chair to decide whether support is needed.
 - Question for the chair: Calcium or left main on CCTA, and IVUS catheter is 0 on hand with resupply ETA 13:00, after the scheduled 12:30 start: chair to decide how to proceed.
 
 ## Flags from the agents
@@ -66,10 +66,10 @@ Complexity triggers: 0 of 4
 ✅ none
 
 ## Summary and approvals
-- Ruling recorded: Case 4 = NO FLAGS RAISED
+- Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 0 · Meds 0 · Equipment 0
 
 Contrast ratio: n/a (proposed cap 3.7; contrast mL ÷ eGFR)
-Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the four complexity triggers, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
+Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
