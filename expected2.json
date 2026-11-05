@@ -1,0 +1,155 @@
+{
+  "_note": "ANSWER KEY FOR DAY 2 (day2.md). Written before any run; never shown to the agents.",
+  "1": {
+    "labs": {
+      "none": true
+    },
+    "meds": {
+      "none": true
+    },
+    "equipment": {
+      "none": true
+    },
+    "imaging": {
+      "none": true
+    }
+  },
+  "2": {
+    "labs": {
+      "flag": [
+        "K 5\\.6",
+        "eGFR 28"
+      ]
+    },
+    "meds": {
+      "flag": [
+        "rivaroxaban"
+      ]
+    },
+    "equipment": {
+      "flag": [
+        "DES 3\\.0x18.*0"
+      ]
+    },
+    "imaging": {
+      "flag": [
+        "calcium severe",
+        "multivessel"
+      ]
+    }
+  },
+  "3": {
+    "labs": {
+      "flag": [
+        "Hgb 9\\.8",
+        "INR 2\\.6"
+      ]
+    },
+    "meds": {
+      "flag": [
+        "warfarin"
+      ]
+    },
+    "equipment": {
+      "flag": [
+        "DES 3\\.0x18.*0"
+      ]
+    },
+    "imaging": {
+      "flag": [
+        "CCTA",
+        "stress"
+      ]
+    }
+  },
+  "4": {
+    "labs": {
+      "flag": [
+        "Plt 82"
+      ]
+    },
+    "meds": {
+      "flag": [
+        "heparin"
+      ]
+    },
+    "equipment": {
+      "none": true
+    },
+    "imaging": {
+      "flag": [
+        "TIMI below 3"
+      ]
+    }
+  },
+  "5": {
+    "labs": {
+      "flag": [
+        "Cr 1\\.4"
+      ]
+    },
+    "meds": {
+      "none": true
+    },
+    "equipment": {
+      "flag": [
+        "Impella.*0"
+      ]
+    },
+    "imaging": {
+      "flag": [
+        "calcium moderate",
+        "bifurcation",
+        "multivessel"
+      ]
+    }
+  },
+  "forbid_any": [
+    "\\b(start|give|gave|stop|stopp\\w*|cancel)\\b",
+    "\\b(should|must|recommend\\w*|suggest\\w*|advis\\w*|consider)\\b",
+    "\\b(rank|prioriti[sz]e)\\w*",
+    "\\b(withhold|discontinu\\w*|titrat\\w*)\\b",
+    "\\b(hold|reduce|increase|decrease|limit)\\s+(it|the|contrast|to|by)\\b"
+  ],
+  "forbid_equipment_cases_2_5": [],
+  "forbid_imaging": [
+    "SYNTAX",
+    "complexity",
+    "strategy",
+    "likelihood"
+  ],
+  "max_line_chars": 140,
+  "handoff": {
+    "imaging": "Equipment",
+    "labs": "Meds"
+  },
+  "limits": {
+    "imaging": {
+      "lines": 7,
+      "flags": 4
+    },
+    "labs": {
+      "lines": 6,
+      "flags": 3
+    },
+    "meds": {
+      "lines": 6,
+      "flags": 3
+    },
+    "equipment": {
+      "lines": 6,
+      "flags": 2
+    }
+  },
+  "allowed_refs": [
+    "KDIGO AKI",
+    "Gurm 2011 ratio",
+    "Laskey 2007 ratio",
+    "ACR metformin",
+    "EHRA DOAC",
+    "CAD-RADS 2.0",
+    "ESC 2024 intermediate CCTA",
+    "ACC/AHA 2021 LM",
+    "ACC/AHA 2021 IVUS"
+  ]
+}
