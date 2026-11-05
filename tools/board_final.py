@@ -18,6 +18,16 @@ def summary(rows, d, approved=False):
     if approved: rows_ap += f"<tr><td>{e(time.strftime('%H:%M:%S'))}</td><td>this board</td><td class=ok>Allow once</td><td>Sign the final board</td><td>the chair, on the Switch card</td></tr>"
     return s + "<h2>Approvals</h2>" + (f"<table><tr><th>Time</th><th>Request</th><th>Decision</th><th>What</th><th>By</th></tr>{rows_ap}</table>" if rows_ap else "<p>No approval decisions recorded.</p>")
 
+def problems(d, now=None):
+    """What would make `Board is final` refuse (no writes): list of strings, empty = ready."""
+    now = now or time.time(); src = os.path.join(d, "board-draft.md"); hb = os.path.join(d, "_heartbeat"); out = []
+    if not os.path.exists(src): return ["no board draft recorded; ask the Clerk for a Board draft first"]
+    if now - os.path.getmtime(src) > MAX_AGE_MIN * 60: out.append(f"the board draft is older than {MAX_AGE_MIN} min")
+    if not os.path.exists(hb) or now - os.path.getmtime(hb) > HEARTBEAT_S: out.append("the room recorder is not running")
+    ru = records.rulings(d); newest = max([r.get("ts", 0) for r in ru.values()] or [0])
+    if newest > os.path.getmtime(src): out.append("a ruling was recorded after the latest board draft: ask for a new Board draft")
+    return out
+
 def main(a):
     arg = lambda k, d=None: a[a.index(k) + 1] if k in a else d
     d = os.path.abspath(arg("--briefs", os.path.join(ROOT, "briefs"))); out = os.path.abspath(arg("--out", ".")); src = os.path.join(d, "board-draft.md"); hb = os.path.join(d, "_heartbeat"); now = time.time()

@@ -3,7 +3,7 @@
 and the agents' own briefs (--briefs FILE | - | DIR). Outputs plan-case-N.md/.html and, with --pdf, plan-case-N.pdf (headless Chrome).
 usage: plan.py CASE [--briefs FILE|-|DIR] [--out DIR] [--pdf] [--approved] [--force]      plan.py --selftest
 With --briefs DIR (the Clerk's flow) it refuses stale or mixed-run briefs and a dead room recorder unless --force."""
-import glob, html, json, os, re, subprocess, sys, time
+import glob, hashlib, html, json, os, re, subprocess, sys, time
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import records, angio, pk
 HERE = os.path.dirname(os.path.realpath(__file__)); ROOT = os.path.join(HERE, "..")
@@ -14,6 +14,25 @@ SIGNED = "Synthetic teaching content. Not clinical advice. Not a medical device.
 LOGIC = "Template logic is unreviewed: the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them."
 LOGIC_SHORT = "Template logic (the Heart Team factor rules, stage assignment, Labs' eGFR cutoff) is also unreviewed."
 MAX_AGE_MIN, MAX_SPREAD_MIN, HEARTBEAT_S = 90, 15, 180
+
+def provenance(case, rec_dir=None):
+    """Which inputs produced this plan: short hashes of template/thresholds/plan.py, the data file, and the chair packet id the briefs answer."""
+    h = lambda p: hashlib.sha256(open(p, "rb").read()).hexdigest()[:10] if os.path.exists(p) else "n/a"
+    pk_ = {}
+    try: pk_ = json.load(open(os.path.join(rec_dir or os.path.join(ROOT, "briefs"), f"packet-{case}.json")))
+    except (OSError, ValueError): pass
+    day = os.environ.get("DAY_FILE") or os.path.join(ROOT, "day.md")
+    return dict(template=h(os.path.join(ROOT, "template.yaml")), thresholds=h(os.path.join(ROOT, "thresholds.json")), plan=h(os.path.realpath(__file__)), day=os.path.basename(day), packet=(pk_.get("id") or "n/a")[:8])
+
+def check(case, d):
+    """Everything that would make `Plan case N` refuse, without writing: -> list of problems (empty = ready). Used by --check and by the recorder before the chair presses Allow."""
+    text, probs = read_dir(d); probs = list(probs)
+    if text:
+        have = briefs(text); probs += [f"no brief from {a}" for a in AGENTS if a not in have]
+        try: pt = json.load(open(os.path.join(os.path.dirname(os.path.abspath(d)), f"packet-{case}.json")))["ts"]
+        except (OSError, ValueError, KeyError): pt = None
+        if pt and any(os.path.getmtime(f) < pt - 2 for f in glob.glob(os.path.join(d, "*.md"))): probs.append("a brief is older than the chair's latest packet for this case")
+    return probs
 
 def packet(case):
     day = open(os.environ.get("DAY_FILE") or os.path.join(ROOT, "day.md")).read()  # DAY_FILE: run the same logic on the scenario library
@@ -184,7 +203,7 @@ def build(case, btext, approved=False, th=None):
     s1 = [l for l in ls if l["vessel"].lower() in pt.group(3).lower()]; s2 = [l for l in ls if l not in s1]
     rec_dir = os.path.join(ROOT, "briefs"); ruling = records.rulings(rec_dir).get(str(case), {}).get("text")
     appr = [a for a in records.approvals(rec_dir) if re.search(rf"\bcase {case}\b", a["what"], re.I)]
-    return dict(warn=warn, prep=prep(ls, manifest_groups(f), lk, pre, th, pathway, stock(f), pt.group(2), stock_names(f), ef), pathway=pathway, stage=stage, pre=pre, lk=lk, groups=manifest_groups(f), ruling=ruling, appr=appr, case=case, pt=pt.group(1), time=pt.group(2), proc=pt.group(3), lesions=ls, triggers=tr, ratio=ratio, cap=cap, rules=rules, manifest=manifest(f),
+    return dict(prov=provenance(case), warn=warn, prep=prep(ls, manifest_groups(f), lk, pre, th, pathway, stock(f), pt.group(2), stock_names(f), ef), pathway=pathway, stage=stage, pre=pre, lk=lk, groups=manifest_groups(f), ruling=ruling, appr=appr, case=case, pt=pt.group(1), time=pt.group(2), proc=pt.group(3), lesions=ls, triggers=tr, ratio=ratio, cap=cap, rules=rules, manifest=manifest(f),
                 flags=flags, notes=notes, needs=needs, s1=s1, s2=s2, staged=contrast_hit and bool(s1), devices=f.get("DEVICES", ""), missing=missing, approved=approved, th=th,
                 angio_missing=angio_missing, unreliable="unreliable" in labs, report=f.get("CATH REPORT", "not in packet"), stamp=time.strftime("%Y-%m-%d %H:%M"))
 
@@ -213,7 +232,7 @@ def md(p):
     if p["approved"]: L += [f"- This plan: Allow once by the chair on the Switch card, {p['stamp']}"]
     L += ["", f"Contrast ratio: {p['ratio'] if p['ratio'] is not None else 'n/a'} (proposed cap {p['cap']}; contrast mL ÷ eGFR)" + (" · eGFR flagged unreliable in the packet" if p["unreliable"] else ""),
           f"Thresholds: {p['th']['status_text'] if not p['th']['verified'] else 'verified by the chair'} · {'template logic verified' if p['th'].get('logic_verified') else LOGIC}", "",
-          "**Status: " + ("APPROVED by the chair" if p["approved"] else "AWAITING CHAIR RULING") + "**"]
+          "**Status: " + ("APPROVED by the chair" if p["approved"] else "AWAITING CHAIR RULING") + "**", f"_Provenance: template {p['prov']['template']} · thresholds {p['prov']['thresholds']} · plan.py {p['prov']['plan']} · {p['prov']['day']} · packet id {p['prov']['packet']}_"]
     return "\n".join(L) + "\n"
 
 CSS = """@page{size:Letter;margin:0.45in 0.55in 0.6in;@bottom-left{content:'Synthetic demo · not clinical advice · not a medical device';font:8pt Helvetica;color:#444}@bottom-right{content:'Page ' counter(page) ' of ' counter(pages);font:8pt Helvetica;color:#444}}
@@ -350,7 +369,7 @@ def htm(p):
 {stg}{figure_html(p)}<div style="break-inside:avoid;{'break-before:page' if (p['lesions'] or (p['pre'] and p['pre']['cta'])) else ''}"><h2>Equipment manifest</h2>{mtab}</div>{prept}
 <h2>Flags from the agents</h2>{fl}<p class=def>Relay: Imaging → Equipment, Labs → Meds.</p><h2>Summary and approvals</h2>{summ}
 <div class=sig><div><b>Status</b><br><span style="font-size:9pt;color:#334">{sigtxt}</span></div><div class="stamp{'' if p['approved'] else ' pend'}">{'APPROVED BY CHAIR' if p['approved'] else 'AWAITING CHAIR'}</div></div>
-<p style="font-size:8.5pt;color:#444;margin-top:10px">Sources: packet (day.md) · briefs from Imaging, Labs, Meds, Equipment · thresholds.json · evidence table docs/EVIDENCE.md (E1 to E15, secondary summaries, chair verifies). Generated {e(p['stamp'])} by plan.py (template, no model).</p></body></html>"""
+<p style="font-size:8.5pt;color:#444;margin-top:10px">Sources: packet ({e(p['prov']['day'])}) · briefs from Imaging, Labs, Meds, Equipment · thresholds.json · evidence table docs/EVIDENCE.md (E1 to E16, mostly secondary summaries, chair verifies). Generated {e(p['stamp'])} by plan.py (template, no model).<br>Provenance: template {e(p['prov']['template'])} · thresholds {e(p['prov']['thresholds'])} · plan.py {e(p['prov']['plan'])} · packet id {e(p['prov']['packet'])}. "ref:" on a flag names a published criterion; it is not an instruction.</p></body></html>"""
 
 def render_pdf(html_path, pdf_path):
     if not os.path.exists(CHROME): return f"Chrome not found at {CHROME} (set CHROME=/path/to/chrome); the .md and .html were written"
@@ -406,6 +425,16 @@ def selftest():
           ("packet reader: unreadable values and short rows warn instead of crashing", len(w) == 3), ("packet reader: EF takes the latest value", pk.ef("prior EF 55%, now EF 30%") == 30 and pk.ef("LVEF 35-40%") == 35)]
     for name, cond in pc: print("PASS" if cond else "FAIL", name); ok &= cond
     import tempfile
+    with tempfile.TemporaryDirectory() as td:  # pre-check: a missing brief and a brief older than the packet are named before the card is raised
+        cd = os.path.join(td, "case-2"); os.makedirs(cd); now = time.time(); open(os.path.join(td, "_heartbeat"), "w").write("x")
+        for i, ag in enumerate(AGENTS[:3]): open(os.path.join(cd, ag + ".md"), "w").write(f"**[{ag.upper()} — Case 2]** x\n")
+        c4 = any("no brief from equipment" in x for x in check("2", cd))
+        open(os.path.join(cd, "equipment.md"), "w").write("**[EQUIPMENT — Case 2]** x\n"); c5 = check("2", cd) == []
+        json.dump({"id": "abcdef123456", "ts": now + 600}, open(os.path.join(td, "packet-2.json"), "w")); c6 = any("older than the chair's latest packet" in x for x in check("2", cd))
+        open(os.path.join(cd, "labs.md"), "w").write("**[IMAGING — Case 2]** x\n"); c7 = any("labs.md does not hold" in x for x in check("2", cd))
+        for name, cond in (("pre-check names a missing brief", c4), ("pre-check passes a complete fresh set", c5), ("pre-check refuses briefs older than the packet", c6), ("pre-check refuses a brief filed under the wrong agent", c7)): print("PASS" if cond else "FAIL", name); ok &= cond
+    pv = provenance("2"); c8 = all(len(pv[k]) >= 3 for k in ("template", "thresholds", "plan", "day")) and "Provenance" in md(build("2", b, th=th)) and "Provenance:" in htm(build("2", b, th=th))
+    print("PASS" if c8 else "FAIL", "provenance carried in md and html"); ok &= c8
     with tempfile.TemporaryDirectory() as td:  # signing needs a real, newer, matching Allow
         j = lambda *r: open(os.path.join(td, "approvals.jsonl"), "w").write("\n".join(json.dumps(x) for x in r) + "\nnot json\n")
         A = lambda dec, ts, what="Run plan tool for case 2": dict(id=str(ts), ts=ts, request="A1", decision=dec, what=what, by="chair")
@@ -424,6 +453,8 @@ if __name__ == "__main__":
     if not a: sys.exit(__doc__)
     arg = lambda k, d=None: a[a.index(k) + 1] if k in a else d
     bt = arg("--briefs"); probs = []
+    if "--check" in a and bt and os.path.isdir(bt):
+        pr = check(a[0], bt); print("PLAN CHECK " + ("OK: ready to sign" if not pr else "WOULD REFUSE: " + "; ".join(pr))); sys.exit(1 if pr else 0)
     if bt and os.path.isdir(bt): bt, probs = read_dir(bt)
     else: bt = sys.stdin.read() if bt == "-" else (open(bt).read() if bt else "")
     if probs and "--force" not in a: print("PLAN INCOMPLETE: " + "; ".join(probs)); sys.exit(3)

@@ -5,10 +5,11 @@ Also saves the Clerk's latest board draft to briefs/board-draft.md. Rules: only 
 oldest-first replay so the newest brief wins; a heartbeat file proves it is alive (plan.py refuses stale briefs without it); errors are logged and retried.
 usage: recorder.py [--once]"""
 import os, re, shutil, sys, time
-import json, mm, records
+import json, mm, records, plan, board_final
 OUT = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "briefs")
 HEAD = re.compile(r"^\s*(?:@\w+\s+)*\*\*\[(\w+) — Case ([1-9])\]\*\*", re.I)
 PACKET = re.compile(r"^@\w+(?:\s+@\w+)*\s+\*\*Case ([1-9])\*\*")
+ASKS = re.compile(r"^@clerk\s+(?:plan case ([1-9])\b|(board is final)\b)", re.I)
 AGENTS = ("imaging", "labs", "meds", "equipment")
 
 def log(msg):
@@ -24,7 +25,14 @@ def sweep(tok, ch, ids, since, seen):
         seen.add(key); since = max(since, max(p["create_at"], p.get("update_at", 0)) / 1000 - 2)
         if p["user_id"] == ids["_chair"]:
             m = PACKET.match(p["message"])
-            if m: shutil.rmtree(os.path.join(OUT, f"case-{m.group(1)}"), ignore_errors=True); cleared += 1
+            if m:
+                shutil.rmtree(os.path.join(OUT, f"case-{m.group(1)}"), ignore_errors=True); cleared += 1
+                open(os.path.join(OUT, f"packet-{m.group(1)}.json.tmp"), "w").write(json.dumps({"id": p["id"], "ts": p["create_at"] / 1000})); os.replace(os.path.join(OUT, f"packet-{m.group(1)}.json.tmp"), os.path.join(OUT, f"packet-{m.group(1)}.json"))
+            k = ASKS.match(p["message"].strip())
+            if k and p["create_at"] / 1000 > time.time() - 120:  # live asks only, not a replay
+                pr = plan.check(k.group(1), os.path.join(OUT, f"case-{k.group(1)}")) if k.group(1) else board_final.problems(OUT)
+                what = f"plan case {k.group(1)}" if k.group(1) else "board"; msg = f"PRECHECK {what}: " + ("ready to sign" if not pr else "WOULD REFUSE: " + "; ".join(pr))
+                print(msg, flush=True); log(msg)
             continue
         if p["user_id"] == ids["_clerk"]:
             if p["message"].lstrip().startswith("BOARD —") and "|---" in p["message"]: open(os.path.join(OUT, "board-draft.md"), "w").write(p["message"].strip() + "\n"); wrote += 1
