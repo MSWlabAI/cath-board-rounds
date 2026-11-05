@@ -1,0 +1,163 @@
+{
+  "_note": "Scorer oracle for check.py (never shown to agents). flag = regexes that must each match a FLAG line; none = no FLAG line; missing = MISSING: ANGIO block; need = regex that must match the HANDOFF line; limits = max lines/flags per agent.",
+  "1": {
+    "labs": {
+      "none": true
+    },
+    "meds": {
+      "none": true
+    },
+    "equipment": {
+      "flag": [
+        "IVUS.*\\b0\\b"
+      ],
+      "ref": [
+        "ACC/AHA 2021 IVUS"
+      ]
+    },
+    "imaging": {
+      "flag": [
+        "calcium severe",
+        "bifurcation"
+      ]
+    }
+  },
+  "2": {
+    "labs": {
+      "flag": [
+        "Cr 2\\.7",
+        "eGFR 24"
+      ],
+      "ref": [
+        "KDIGO AKI"
+      ]
+    },
+    "meds": {
+      "flag": [
+        "metformin"
+      ],
+      "ref": [
+        "ACR metformin"
+      ]
+    },
+    "equipment": {
+      "none": true
+    },
+    "imaging": {
+      "flag": [
+        "calcium moderate",
+        "TIMI below 3",
+        "multivessel"
+      ]
+    }
+  },
+  "3": {
+    "labs": {
+      "none": true
+    },
+    "meds": {
+      "flag": [
+        "apixaban"
+      ],
+      "ref": [
+        "EHRA DOAC"
+      ]
+    },
+    "equipment": {
+      "none": true
+    },
+    "imaging": {
+      "none": true
+    }
+  },
+  "4": {
+    "labs": {
+      "none": true
+    },
+    "meds": {
+      "none": true
+    },
+    "equipment": {
+      "none": true
+    },
+    "imaging": {
+      "flag": [
+        "CCTA",
+        "stress",
+        "EF"
+      ]
+    }
+  },
+  "5": {
+    "labs": {
+      "flag": [
+        "K 3\\.2"
+      ],
+      "need": [
+        "Meds.*furosemide"
+      ]
+    },
+    "meds": {
+      "none": true
+    },
+    "equipment": {
+      "none": true
+    },
+    "imaging": {
+      "flag": [
+        "calcium severe",
+        "multivessel"
+      ]
+    }
+  },
+  "forbid_any": [
+    "\\b(start|give|gave|stop|stopp\\w*|cancel)\\b",
+    "\\b(should|must|recommend\\w*|suggest\\w*|advis\\w*|consider)\\b",
+    "\\b(rank|prioriti[sz]e)\\w*",
+    "\\b(withhold|discontinu\\w*|titrat\\w*)\\b",
+    "\\b(hold|reduce|increase|decrease|limit)\\s+(it|the|contrast|to|by)\\b"
+  ],
+  "forbid_equipment_cases_2_5": [
+    "IVUS"
+  ],
+  "forbid_imaging": [
+    "SYNTAX",
+    "complexity",
+    "strategy",
+    "likelihood"
+  ],
+  "max_line_chars": 140,
+  "handoff": {
+    "imaging": "Equipment",
+    "labs": "Meds"
+  },
+  "limits": {
+    "imaging": {
+      "lines": 7,
+      "flags": 4
+    },
+    "labs": {
+      "lines": 6,
+      "flags": 3
+    },
+    "meds": {
+      "lines": 6,
+      "flags": 3
+    },
+    "equipment": {
+      "lines": 6,
+      "flags": 2
+    }
+  },
+  "allowed_refs": [
+    "KDIGO AKI",
+    "Gurm 2011 ratio",
+    "Laskey 2007 ratio",
+    "ACR metformin",
+    "EHRA DOAC",
+    "CAD-RADS 2.0",
+    "ESC 2024 intermediate CCTA",
+    "ACC/AHA 2021 LM",
+    "ACC/AHA 2021 IVUS"
+  ]
+}
