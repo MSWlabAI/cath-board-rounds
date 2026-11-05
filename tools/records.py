@@ -8,7 +8,11 @@ RULING = re.compile(r"^RULING RECEIVED: (Case ([1-9]) = .*)$")
 
 def approvals(d=DIR):
     p = os.path.join(d, "approvals.jsonl")
-    return [json.loads(l) for l in open(p)] if os.path.exists(p) else []
+    out = []
+    for l in (open(p) if os.path.exists(p) else []):
+        try: out.append(json.loads(l))
+        except ValueError: pass  # a torn line must not take the whole record down
+    return out
 
 def rulings(d=DIR):
     p = os.path.join(d, "rulings.json")
@@ -23,3 +27,9 @@ def note(post):
         who = CHOSEN.search(msg); return "approval", {"id": post["id"], "ts": max(post["create_at"], post.get("update_at", 0)) / 1000, "request": m.group(2), "decision": m.group(1), "what": m.group(3).strip(), "by": who.group(1) if who else ("the chair via interrupt" if m.group(1) == "Closed" else "the chair")}
     m = RULING.match(post["message"].strip())
     if m: return "ruling", (m.group(2), m.group(1), post["create_at"] / 1000)
+
+def signed(d, pattern, after):
+    """The newest approval whose request text matches `pattern` -> that record if it is an Allow decided after `after` (epoch s), else None.
+    Signing needs this: --approved alone proves nothing."""
+    hits = sorted((a for a in approvals(d) if re.search(pattern, a["what"], re.I)), key=lambda a: a["ts"])
+    return hits[-1] if hits and hits[-1]["decision"].startswith("Allow") and hits[-1]["ts"] >= after else None

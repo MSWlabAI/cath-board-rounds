@@ -348,11 +348,17 @@ def render_pdf(html_path, pdf_path):
     r = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", f"--print-to-pdf={pdf_path}", "file://" + os.path.abspath(html_path)], capture_output=True, timeout=90)
     return None if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 1000 else f"Chrome produced no PDF (rc={r.returncode}): {r.stderr.decode()[-120:]}"
 
+def atomic(path, text):
+    open(path + ".tmp", "w").write(text); os.replace(path + ".tmp", path)
+
 def write(case, btext, out, pdf=False, approved=False):
     p = build(case, btext, approved); os.makedirs(out, exist_ok=True); base = os.path.join(out, f"plan-case-{case}")
-    open(base + ".md", "w").write(md(p)); open(base + ".html", "w").write(htm(p)); res = [base + ".md", base + ".html"]; err = None
+    for ext in (".md", ".html", ".pdf"):  # never leave an older plan behind as if it were this one
+        if os.path.exists(base + ext): os.remove(base + ext)
+    atomic(base + ".md", md(p)); atomic(base + ".html", htm(p)); res = [base + ".md", base + ".html"]; err = None
     if pdf:
-        err = render_pdf(base + ".html", base + ".pdf")
+        t0 = time.time() - 2; err = render_pdf(base + ".html", base + ".pdf")
+        if not err and os.path.getmtime(base + ".pdf") < t0: err = "the PDF on disk is older than this run"
         if not err: res.append(base + ".pdf")
     return p, res, err
 
@@ -365,6 +371,10 @@ def read_dir(d, now=None):
     if (max(ages) - min(ages)) > MAX_SPREAD_MIN * 60: probs.append(f"briefs come from different runs ({int((max(ages) - min(ages)) / 60)} min apart)")
     hb = os.path.join(os.path.dirname(os.path.abspath(d)), "_heartbeat")
     if not os.path.exists(hb) or now - os.path.getmtime(hb) > HEARTBEAT_S: probs.append("the room recorder is not running, so these briefs may be stale")
+    for f in files:  # each file must be one brief whose header names the file's agent and this folder's case
+        t = open(f).read(); h = re.findall(r"\*\*\[(\w+) — Case (\d)\]\*\*", t); name = os.path.basename(f)[:-3]; case = os.path.basename(os.path.abspath(d)).replace("case-", "")
+        if name in AGENTS and (len(h) != 1 or h[0][0].lower() != name or h[0][1] != case): probs.append(f"{name}.md does not hold exactly one {name} brief for case {case}")
+    read_dir.newest = max(os.path.getmtime(f) for f in files)
     return "\n".join(open(f).read() for f in files), probs
 
 def selftest():
@@ -381,6 +391,14 @@ def selftest():
                        ("draft html keeps the DRAFT strip and boxes", "DRAFT for the chair" in htm(p) and "class=bx" in htm(p)), ("logic strip while unverified", "also unreviewed" in htm(p)),
                        ("eGFR caveat carried", "unreliable" in htm(p) and p["unreliable"]), ("stock note clean", all("(on hand" not in s for _, s in build("1", b, th=th)["manifest"])), ("md has no 'None' contrast", "Contrast ratio: n/a" in md(build("4", b, th=th)))]:
         print("PASS" if cond else "FAIL", name); ok &= cond
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:  # signing needs a real, newer, matching Allow
+        j = lambda *r: open(os.path.join(td, "approvals.jsonl"), "w").write("\n".join(json.dumps(x) for x in r) + "\nnot json\n")
+        A = lambda dec, ts, what="Run plan tool for case 2": dict(id=str(ts), ts=ts, request="A1", decision=dec, what=what, by="chair")
+        j(A("Allow once", 100)); c1 = bool(records.signed(td, r"\bcase 2\b", 50)) and not records.signed(td, r"\bcase 2\b", 150) and not records.signed(td, r"\bcase 3\b", 50)
+        j(A("Allow once", 100), A("Decline", 200)); c2 = not records.signed(td, r"\bcase 2\b", 50)
+        j(A("Decline", 100), A("Allow once", 200)); c3 = bool(records.signed(td, r"\bcase 2\b", 50))
+        for name, cond in (("signing: Allow newer than briefs counts, older or other case does not", c1), ("signing: a later Decline cancels", c2), ("signing: later Allow after Decline counts, bad JSONL line tolerated", c3)): print("PASS" if cond else "FAIL", name); ok &= cond
     for bad in ("0", "10", "a", "1;rm"):
         try: build(bad, b, th=th); print("FAIL case validation", bad); ok = False
         except SystemExit: pass
@@ -395,6 +413,12 @@ if __name__ == "__main__":
     if bt and os.path.isdir(bt): bt, probs = read_dir(bt)
     else: bt = sys.stdin.read() if bt == "-" else (open(bt).read() if bt else "")
     if probs and "--force" not in a: print("PLAN INCOMPLETE: " + "; ".join(probs)); sys.exit(3)
+    if "--approved" in a:  # a stamp needs a real Allow: briefs from the recorder's folder, an Allow decided after the newest brief, and no --force
+        if "--force" in a: print("PLAN INCOMPLETE: --approved cannot be combined with --force"); sys.exit(3)
+        rd = os.path.join(ROOT, "briefs")
+        if not os.path.isdir(arg("--briefs") or ""): print("PLAN INCOMPLETE: signing needs the recorder's briefs folder"); sys.exit(3)
+        if not records.signed(rd, rf"\bcase {a[0]}\b", getattr(read_dir, "newest", 0)):
+            last = (records.approvals(rd) or [{}])[-1]; print(f"PLAN INCOMPLETE: no Allow once recorded for this plan after its newest brief (last card: {last.get('decision', 'none')} {last.get('what', '')[:50]}); not signing"); sys.exit(3)
     p, files, err = write(a[0], bt, arg("--out", os.path.join(ROOT, "plans")), "--pdf" in a, "--approved" in a)
     print("\n".join(files))
     if err: print("PLAN INCOMPLETE: " + err); sys.exit(2)
