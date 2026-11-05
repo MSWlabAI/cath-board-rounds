@@ -1,0 +1,42 @@
+# freeze.txt: sha256 of everything that defines behaviour. Regenerate with tools/freeze.py; a diff means the streak restarts.
+
+f5bd22dbfd79947305cb666ca425f78ea95472849ce527f7b5c6a38ff679d3cc  template.yaml
+fd5dd69fe61a9ab4d856ecd19ec3f65bbd7eeba70593350087e704b1ff80223d  day.md
+044782beda5aa2dcce769ec168c675dff4f5bf307d9707f049982bd246a1df06  expected.json
+b1e6f419526f47079786841cec0d2c747990f7842da7fe51fc63a588262dd5ff  thresholds.json
+74f38572a96ea7e88cdc3c74f1326d094774d0f5d7c76d40f797e767ccd3b4c8  case
+4a3f9f3ee558474414c822433474a8db3989b7f943324f7be0bfb252643c1765  check.sh
+e8c7c88eb04ed0bbac499a3bae360546e6c0cbb0854bec650fb8a4e5fbe8da40  tools/angio.py
+cf3a76267addb5d3c4c3780ae3bcfa8fd88995e194ff0c1680b502d05b2fd474  tools/ask.py
+62200cebe619be8daef1523900d8bc42f615661030ff08131de4a11b2990e14c  tools/board.py
+3a6643ce714d5fb8e2dd31a665ecf6a25f127453a0331f7a1132a044e1f94e72  tools/board_final.py
+1aaef4019ff34c37276125014a390601d61ad5950b548568e9745339466452f7  tools/board_pdf.py
+d24ea8234bfb5216e9ddd18de0abbfd16f13b37d95bca157edd01b0f682da9a7  tools/callback_forward.py
+1d70f6349c993e52a9aadf542be913e365652df7149358c14ffb697d9afe6532  tools/check.py
+fa8f586462855ed7b79ff6da541a3f9d68d00a2409feac0e00d41aa6427a9eb1  tools/clerk.py
+5b715b94b1ffe1016a870d8683fbb06c251158ebe5c8c65382c26520de995615  tools/dryrun.py
+e31c520384bdd6f597cf61be77eda892828129c80549737021a65dbfa56d9590  tools/freeze.py
+dda0440b673daa422a1fedd2dd2f1cd71d3f424221fffdf0890f6ea25f5d143a  tools/localcheck.py
+fbf93bbaab0228095825533a85b3e46b5a2a9e3376b90e6d9e2d692e58aaa77f  tools/mm.py
+0bae005b96e217627cdd2e0e7bc83b2473b8e29fb15ff64c48e7b1c233326b1a  tools/packet.py
+62f9869dadecee9502bd9d78b323bcda3743fb00c6d0bbee9b9daa2f5ebb4e3f  tools/pin_intro.py
+0d5e54703bf0a2a604e36e742d784b32d5931f8944cabde2af5529055ba58bb1  tools/plan.py
+bd859c98b6e980d30863b40363c8f685028a5d62aed705f36d41d346b3f3ac72  tools/recorder.py
+3d510133052120066bb5b662acbb45fca3ad08b93a686576aa7b5797ffe4d8c7  tools/records.py
+09de53c3f78bed59264351efb811cfeadb1bf3a88ed1bf9b8d6b45b0c9abe0e5  tools/scenarios_live.py
+6fcc93913a7313dc2fceb8ab4fd95daa01b59f831947b7486978b76120e68fd8  tools/scenarios_test.py
+99e4c01a068236994fd7b0f376f712fb8b80c1c584b62dd1e065dfc0a3372375  tools/sync_prompts.py
+
+# agent prompts (from template.yaml)
+0b9405413b4c6ac6  labs       claude  3659 chars
+0b4bdc35ed86ebfb  meds       claude  3618 chars
+65feb701d0460bad  equipment  claude  3409 chars
+4308397209de2dd3  imaging    cursor  4851 chars
+49357b41d108e437  clerk      claude  4942 chars
+
+# tools
+claude: 2.1.318 (Claude Code)
+cursor-agent: 2026.10.22-27dcf5f
+python: 3.14.7
+cursor model (default on this machine): Grok 4.5 High Fast
+claude room agents inherit the user-level Claude Code settings: model=sonnet effort=xhigh

@@ -115,7 +115,10 @@ shape and wording, not clinical truth.
 ## Results
 
 See `runs.csv` (frozen-prompt runs) and `runs-tuning.csv` (earlier runs, made while prompts were still being tuned; kept for transparency, not counted).
-RESULTS_PLACEHOLDER
+**Frozen prompts** (hash in `freeze.txt`): 11 live runs, 220 briefs (5 cases through 4 agents, scored against `expected.json`), **0 misses, and the last 10 runs in a row clean**; 11 format notes (lines over 140 characters, logged and not counted).
+**The version before** (Imaging's trigger wording not yet pinned): 11 runs, 8 briefs missed the phrase `TIMI below 3` on Case 2 because Imaging wrote only the TIMI value. The finding was right and the prompt was ambiguous, so the prompt was fixed; the scorer was not loosened.
+**Earlier versions**, while prompts were being tuned: 6 runs, 120 briefs, 0 misses (`runs-tuning.csv` and earlier rows of `runs.csv`).
+Not yet run on the frozen prompts in this README's numbers: the full dry run with the three human clicks (`python3 tools/dryrun.py`), and a second, unrehearsed synthetic day. The scorer checks shape and wording against an answer key written by the same author, not clinical truth.
 
 ## Setup (what this entry ran on, one Mac)
 

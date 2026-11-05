@@ -8,13 +8,19 @@ FILES = ["template.yaml", "day.md", "expected.json", "thresholds.json", "case", 
 def sh(*c):
     try: return subprocess.run(c, capture_output=True, text=True, timeout=20).stdout.strip().splitlines()[0]
     except Exception: return "unknown"
+def user_claude():
+    """model and effort the Claude Code room agents inherit (values only, no paths)."""
+    try:
+        import json; d = json.load(open(os.path.expanduser("~/.claude/settings.json"))); return f"model={d.get('model', 'default')} effort={d.get('effortLevel', d.get('effort', 'default'))}"
+    except Exception: return "unknown"
+
 def build():
     L = ["# freeze.txt: sha256 of everything that defines behaviour. Regenerate with tools/freeze.py; a diff means the streak restarts.", ""]
     L += [f"{hashlib.sha256(open(os.path.join(ROOT, f), 'rb').read()).hexdigest()}  {f}" for f in FILES]
     L += ["", "# agent prompts (from template.yaml)"] + subprocess.run([sys.executable, os.path.join(ROOT, "tools", "sync_prompts.py")], capture_output=True, text=True).stdout.strip().splitlines()
     L += ["", "# tools", "claude: " + sh("claude", "--version"), "cursor-agent: " + sh("cursor-agent", "--version"), "python: " + sys.version.split()[0],
           "cursor model (default on this machine): " + (subprocess.run(["cursor-agent", "about"], capture_output=True, text=True).stdout.split("Model")[1].split("\n")[0].strip() if "Model" in subprocess.run(["cursor-agent", "about"], capture_output=True, text=True).stdout else "unknown"),
-          "claude model alias for room agents: from the Console's agent settings (record it here at freeze)"]
+          "claude room agents inherit the user-level Claude Code settings: " + user_claude()]
     return "\n".join(L) + "\n"
 if __name__ == "__main__":
     t = build(); p = os.path.join(ROOT, "freeze.txt")
