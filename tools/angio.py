@@ -4,6 +4,7 @@ Film-style render: tapering lumen polygons, a smooth hourglass narrowing at each
 a guide catheter and aortic root, AHA segment numbers. Right-dominant tree, anterior schematic, not to scale. Layers are named groups (film, vessels, lesions, labels) so an illustrator can restyle the file.
 usage: angio.py CASE [OUT.svg]      (library use: svg(lesions) -> str)"""
 import html, math, os, random, re, sys
+import pk
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 W, H = 760, 720
 SEG = {  # name: (AHA no., Bezier points in a 380x336 design space, base width)
@@ -59,10 +60,10 @@ def svg(ls, title=True):
     for l in ls:
         key = key_for(l["vessel"])
         if not key: continue
-        seg, t0 = PLACE[key]; n = int(re.search(r"\d+", l["pct"]).group()); dips.setdefault(seg, []).append((t0, min(.93, n / 100), .075))
+        seg, t0 = PLACE[key]; n = pk.pct(l["pct"]) or 0; dips.setdefault(seg, []).append((t0, min(.93, n / 100), .075))
         if "Medina 1,1,1" in l["flag"]:  # true bifurcation: disease runs into the proximal LAD and LCx
             dips.setdefault("lad1", []).append((.12, .5, .12)); dips.setdefault("lcx1", []).append((.12, .5, .12))
-        tm = re.search(r"\d", l["timi"]); timi = int(tm.group()) if tm else 3
+        timi = pk.timi(l["timi"]); timi = 3 if timi is None else timi
         if timi < 3: [faded.__setitem__(s, min(faded.get(s, 1), .62 if timi == 2 else .35)) for s in DOWNSTREAM.get(seg, ())]
         no, pts, w = SEG[seg]; x, y = [(X(a), Y(b)) for a, b in [bez(pts, t0)]][0]; badges.append((l, x, y, seg))
         if re.search(r"moderate|severe", l["calcium"]):
@@ -77,7 +78,7 @@ def svg(ls, title=True):
     ca = "".join(f"<circle cx='{x:.1f}' cy='{y:.1f}' r='{r:.1f}'/>" for x, y, r in spots)
     les = ""
     for l, x, y, seg in badges:
-        sev = int(re.search(r"\d+", l["pct"]).group()) >= 70; col = "#ff5252" if sev else "#ffb300"; cta = l.get("cta")
+        sev = (pk.pct(l["pct"]) or 0) >= 70; col = "#ff5252" if sev else "#ffb300"; cta = l.get("cta")
         left = seg in ("lm", "rca1", "rca2", "rca3", "pda", "plv"); lx = x - 38 if left else x + 38
         les += (f"<circle cx='{x:.1f}' cy='{y:.1f}' r='26' fill='none' stroke='{col}' stroke-width='2.2'{'' if (sev and not cta) else ' stroke-dasharray=\"5 4\"'}/>"
                 f"<line x1='{x + (-26 if left else 26):.1f}' y1='{y:.1f}' x2='{lx + (6 if left else -6):.1f}' y2='{y:.1f}' stroke='{col}' stroke-width='1.6'/>"

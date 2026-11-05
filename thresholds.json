@@ -84,6 +84,7 @@
   },
   "contrast_ratio_watch": 2.0,
   "heart_team": {
+    "left_main_percent": 50,
     "_note": "Published Heart Team factors (docs/EVIDENCE.md E7, E8): left main disease; multivessel disease with EF at or below this value. SYNTAX is not computed.",
     "low_ef_percent": 35
   },
