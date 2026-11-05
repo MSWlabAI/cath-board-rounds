@@ -4,6 +4,7 @@
 # then start the 10-run live streak in the background (log in ~/agents/runs/streak.log). usage: tools/after_rebuild.sh <room-slug>   (the slug is the part after /channels/ in the room URL)
 set -u
 SLUG="${1:?usage: tools/after_rebuild.sh <room-slug>}"; REPO="$(cd "$(dirname "$0")/.." && pwd)"; ENVF="${MM_ENV_FILE:?set MM_ENV_FILE to your env file (see .env.example)}"; AG="${AGENTS_DIR:-$HOME/agents}"
+case "$SLUG" in *[!a-z0-9_-]*|"") echo "bad room slug: use only lower-case letters, digits, - and _ (the part after /channels/)"; exit 2;; esac
 grep -q '^ROOM=' "$ENVF" && sed -i '' "s/^ROOM=.*/ROOM=$SLUG/" "$ENVF" || echo "ROOM=$SLUG" >> "$ENVF"
 export ROOM="$SLUG" MM_ENV_FILE="$ENVF"; cd "$REPO" || exit 1
 echo "== recorder"; for p in $(ps -axo pid,command | grep "tools/recorder.py" | grep -v grep | awk '{print $1}'); do kill "$p"; done; rm -rf briefs/case-* briefs/approvals.jsonl briefs/rulings.json briefs/board-draft.md
