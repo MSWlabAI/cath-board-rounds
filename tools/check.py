@@ -72,6 +72,7 @@ def score(case, agent, text):
         for tag in re.findall(r"ref:\s*([^·|]+?)\s*(?:·|$)", l):
             for one in re.split(r"\s*[,;]\s*|\s+and\s+", tag.strip().rstrip(".")):
                 if one not in EXP["allowed_refs"]: miss.append(f"unknown reference: {one[:30]}")
+    if exp.get("noref"): miss += [f"reference tag where none applies: {l[:50]}" for l in flags if "ref:" in l and any(re.search(rx, l, re.I) for rx in exp.get("flag", []))]
     miss += [f"missing taught reference /{rx}/" for rx in exp.get("ref", []) if not any("ref:" in l and rx in l for l in flags)]
     miss += [f"missing planted flag /{rx}/" for rx in exp.get("flag", []) if not any(re.search(rx, l, re.I) for l in flags)]
     if len(flags) > lim["flags"]: miss.append(f"{len(flags)} flags (max {lim['flags']}): flag-everything")
