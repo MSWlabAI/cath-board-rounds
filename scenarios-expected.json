@@ -24,7 +24,7 @@
       "Support devices",
       "IVUS catheter is 0"
     ],
-    "scope": "Branch B on standby"
+    "scope": "name what Branch B would need"
   },
   "3": {
     "band": "higher",
@@ -68,7 +68,7 @@
       "wire",
       "Support"
     ],
-    "scope": "Branch B on standby"
+    "scope": "name what Branch B would need"
   },
   "6": {
     "band": "higher",

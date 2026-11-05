@@ -11,8 +11,8 @@ CHROME = os.environ.get("CHROME", "/Applications/Google Chrome.app/Contents/MacO
 AGENTS = ("imaging", "labs", "meds", "equipment")
 DRAFT = "Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT for the chair to rule on."
 SIGNED = "Synthetic teaching content. Not clinical advice. Not a medical device. Approved by the chair on the Switch card; still a planning draft, not an order."
-LOGIC = "Template logic is unreviewed: the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them."
-LOGIC_SHORT = "Template logic (the Heart Team factor rules, stage assignment, Labs' eGFR cutoff) is also unreviewed."
+LOGIC = "Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them."
+LOGIC_SHORT = "Template logic (likelihood weights and bands, prep rules, Imaging triggers, Heart Team factors, stage assignment, Labs' eGFR cutoff) is also unreviewed."
 MAX_AGE_MIN, MAX_SPREAD_MIN, HEARTBEAT_S = 90, 15, 180
 
 def provenance(case, rec_dir=None):
@@ -96,7 +96,7 @@ def likelihood(pre, th):
     P = L["points"]; drivers = []
     for l in pre["cta"]:
         n = pk.pct(l["pct"]) or 0; lm = pk.is_lm(l["vessel"])
-        if n >= L.get("ccta_obstructive_percent", 70) or (lm and n >= L.get("ccta_left_main_percent", 50)): drivers.append((f"CCTA {l['pct']}, obstructive by CAD-RADS 2.0 ({l['id']} {l['vessel']}; E5)", P["ccta_obstructive"]))
+        if n >= L.get("ccta_obstructive_percent", 70) or (lm and n >= L.get("ccta_left_main_percent", 50)): drivers.append((f"CCTA {l['pct']}, severe stenosis, CAD-RADS 4A/4B range ({l['id']} {l['vessel']}; E5)", P["ccta_obstructive"]))
         elif n >= L.get("ccta_intermediate_percent", 50): drivers.append((f"CCTA {l['pct']}, intermediate stenosis ({l['id']} {l['vessel']}; E6)", P["ccta_intermediate"]))
     if len(pre["cta"]) >= 2: drivers.append(("two or more CCTA lesions", P["ccta_two_or_more_lesions"]))
     if pre["stress"] == "positive": drivers.append((f"stress test positive ({re.sub(r'^positive\s*', '', pre['stress_text'], flags=re.I) or 'no detail'})", P["stress_positive"]))
@@ -151,7 +151,7 @@ def prep(ls, groups, lk, pre, th, pathway, stock_all=None, case_time="99:99", na
         qs.append(f"EF {ef_val}% in the packet. The 2015 SCAI/ACC consensus names high-risk PCI (multivessel, left main, last conduit) with severely reduced EF but gives no EF cutoff (E10). Support devices on the shelf: {', '.join(sup) or 'none in the stock list'}. Chair to decide whether support is needed.")
     if pathway == "indeterminate" and lk:
         both = ["lower", "intermediate", "higher"].index(lk["band"]) >= ["lower", "intermediate", "higher"].index(P.get("stage_both_branches_from_band", "intermediate"))
-        scope = "Stage Branch A and Branch B (band " + lk["band"] + ", proposed rule)" if both else "Stage Branch A; Branch B on standby (band " + lk["band"] + ", proposed rule)"
+        scope = "Stage Branch A and Branch B (band " + lk["band"] + ", proposed rule)" if both else "Stage Branch A and name what Branch B would need (band " + lk["band"] + ", proposed rule; a label, not a statement that PCI is unlikely)"
     else: scope = "Stage the devices named in the packet"
     classes = (("Guide catheters", ("guide",)), ("Diagnostic catheters", ("diagnostic",)), ("Wires", ("wire",)), ("Balloons", ("balloon",)), ("Stents (DES)", ("des ",)), ("Intravascular imaging", ("ivus", "oct")), ("Support devices", ("impella", "iabp"))); shelf = []
     for label, keys in classes:
@@ -182,7 +182,9 @@ def build(case, btext, approved=False, th=None):
     cap = th.get("contrast_ratio_cap"); rules = []; contrast_hit = False
     if ratio is not None and cap is None: rules.append(f"Contrast ratio {ratio}: cap NOT SET, chair to supply.")
     elif ratio is not None and ratio_raw > cap:
-        contrast_hit = True; rules.append(f"Contrast rule exceeded: ratio {ratio} ({cm.group(1)} mL ÷ eGFR {egfr.group(2)}) is above the proposed cap {cap} (Laskey 2007 cutoff, E2) and above 3 (Gurm 2011, E1; both use creatinine clearance, not eGFR). Chair to decide whether to stage.")
+        contrast_hit = True; rules.append(f"Contrast ratio above published cutoffs: {ratio} ({cm.group(1)} mL ÷ eGFR {egfr.group(2)}) is above {cap}, a cutoff that discriminated early creatinine rise in Laskey 2007 (E2), and above 3, where risk was clearest in Gurm 2011 (E1). Observational cutoffs, not a limit; both used creatinine clearance, not eGFR. Chair to decide whether to stage.")
+    elif ratio is not None and ratio_raw >= 3:
+        rules.append(f"Contrast ratio {ratio} is at or above 3, where risk was clearest in the Gurm 2011 registry (E1; creatinine clearance, not eGFR), and below {cap} (Laskey 2007, E2). Chair to decide.")
     elif ratio is not None and th.get("contrast_ratio_watch") is not None and ratio_raw >= th["contrast_ratio_watch"]:
         rules.append(f"Contrast ratio {ratio} is at or above {th['contrast_ratio_watch']}, where risk began to rise in the Gurm 2011 registry (E1; creatinine clearance, not eGFR). Chair to decide.")
     ht = th.get("heart_team", {}); ef = pre["ef"] if pre and pre["ef"] is not None else pk.ef(f.get("HISTORY", ""))
@@ -325,7 +327,7 @@ def htm(p):
     its = []
     if p["lk"]: its += ["The likelihood points rule is proposed: the chair verifies it.", "Equipment is staged for both branches: confirm stock for the branch actually taken."]
     if not th["verified"]: its.append("Thresholds in thresholds.json are proposed: the chair verifies them before this plan is used.")
-    if not th.get("logic_verified"): its.append("Template logic (the Heart Team factor rules, the stage assignment, Labs' eGFR cutoff) is unreviewed.")
+    if not th.get("logic_verified"): its.append("Template logic (likelihood weights and bands, prep rules, Imaging triggers, Heart Team factors, stage assignment, Labs' eGFR cutoff) is unreviewed.")
     if p["angio_missing"]: its.append("Angio data is missing for this case: no conclusion about complexity or staging.")
     if p["staged"] and p["s2"]: its.append("Stage 2 devices are not listed in the packet: Equipment to confirm.")
     its += p["needs"] + [f"No brief yet from {a.title()}." for a in p["missing"]]
