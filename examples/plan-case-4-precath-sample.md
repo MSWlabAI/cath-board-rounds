@@ -70,6 +70,7 @@ Angio findings flagged: 0 of 4
 - Flags: Imaging 3 · Labs 0 · Meds 0 · Equipment 0
 
 Contrast ratio: n/a (proposed cap 3.7; contrast mL ÷ eGFR)
-Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
+Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
+_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py 50f00be1c6 · day.md · packet id n/a_

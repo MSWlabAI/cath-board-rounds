@@ -1,5 +1,5 @@
-# CATH PLAN · Case 2 · APPROVED
-_Synthetic teaching content. Not clinical advice. Not a medical device. Approved by the chair on the Switch card; still a planning draft, not an order._
+# CATH PLAN · Case 2 · DRAFT
+_Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT for the chair to rule on._
 
 **74M, 78 kg · 09:30 · PCI to mid-LAD (NSTEMI)**
 
@@ -12,7 +12,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. Approved
 Angio findings flagged: 3 of 4 (calcium moderate or severe; TIMI flow below 3; more than one lesion (multivessel))
 
 ## Rules that fired
-- Contrast rule exceeded: ratio 7.1 (170 mL ÷ eGFR 24) is above the proposed cap 3.7 (Laskey 2007 cutoff, E2) and above 3 (Gurm 2011, E1; both use creatinine clearance, not eGFR). Chair to decide whether to stage.
+- Contrast ratio above published cutoffs: 7.1 (170 mL ÷ eGFR 24) is above 3.7, a cutoff that discriminated early creatinine rise in Laskey 2007 (E2), and above 3, where risk was clearest in Gurm 2011 (E1). Observational cutoffs, not a limit; both used creatinine clearance, not eGFR. Chair to decide whether to stage.
 
 ## If the chair stages (illustration from the packet, not a recommendation)
 - Stage 1: L1 mid-LAD (the procedure named in the packet)
@@ -58,9 +58,9 @@ Angio findings flagged: 3 of 4 (calcium moderate or severe; TIMI flow below 3; m
 ## Summary and approvals
 - Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 2 · Meds 2 · Equipment 0
-- This plan: Allow once by the chair on the Switch card, 2026-11-04 20:11
 
 Contrast ratio: 7.1 (proposed cap 3.7; contrast mL ÷ eGFR) · eGFR flagged unreliable in the packet
-Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
+Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
-**Status: APPROVED by the chair**
+**Status: AWAITING CHAIR RULING**
+_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py 50f00be1c6 · day.md · packet id n/a_

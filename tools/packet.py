@@ -21,7 +21,7 @@ def message(case, agents):
     return f"{mention} **Case {case}** · {row[0]} · {row[2]} · {row[1]}\n```\n{pkt}\n```"
 
 DEFAULT_RULINGS = ["Case 1 = REVIEWED WITH NOTES ; IVUS short, ETA 13:00 ; MOVE TO LAST ; operator to confirm", "Case 2 = REVIEWED WITH NOTES ; contrast vs eGFR ; operator to confirm",
-                   "Case 3 = REVIEWED WITH NOTES ; apixaban timing vs history ; operator to confirm", "Case 4 = NO FLAGS RAISED", "Case 5 = ON HOLD ; K 3.2 with furosemide ; operator to confirm"]
+                   "Case 3 = REVIEWED WITH NOTES ; apixaban timing vs history ; operator to confirm", "Case 4 = REVIEWED WITH NOTES ; likelihood band and prep questions open ; operator to confirm", "Case 5 = ON HOLD ; K 3.2 with furosemide ; operator to confirm"]
 def draft(rulings=None):
     """The chair's 'Board draft' message: rulings + CASE TABLE + SLOT LIST from day.md (./case draft)."""
     day = open(DAY).read(); tbl = day.split("## CASE TABLE")[1].split("## PACKETS")[0].strip(); slots = day.split("## SLOTS (scheduled)")[1].split("##")[0].strip()

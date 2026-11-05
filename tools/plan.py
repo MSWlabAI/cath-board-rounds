@@ -19,7 +19,7 @@ def provenance(case, rec_dir=None):
     """Which inputs produced this plan: short hashes of template/thresholds/plan.py, the data file, and the chair packet id the briefs answer."""
     h = lambda p: hashlib.sha256(open(p, "rb").read()).hexdigest()[:10] if os.path.exists(p) else "n/a"
     pk_ = {}
-    try: pk_ = json.load(open(os.path.join(rec_dir or os.path.join(ROOT, "briefs"), f"packet-{case}.json")))
+    try: pk_ = json.load(open(os.path.join(rec_dir or os.environ.get("RECORDS_DIR") or os.path.join(ROOT, "briefs"), f"packet-{case}.json")))
     except (OSError, ValueError): pass
     day = os.environ.get("DAY_FILE") or os.path.join(ROOT, "day.md")
     return dict(template=h(os.path.join(ROOT, "template.yaml")), thresholds=h(os.path.join(ROOT, "thresholds.json")), plan=h(os.path.realpath(__file__)), day=os.path.basename(day), packet=(pk_.get("id") or "n/a")[:8])
@@ -203,7 +203,7 @@ def build(case, btext, approved=False, th=None):
     notes = {a: [l.strip() for l in b.get(a, "").splitlines() if l.strip().startswith("MISSING:")] for a in AGENTS}
     needs = [l.strip() for a in AGENTS for l in b.get(a, "").splitlines() if l.strip().startswith("➡️")]
     s1 = [l for l in ls if l["vessel"].lower() in pt.group(3).lower()]; s2 = [l for l in ls if l not in s1]
-    rec_dir = os.path.join(ROOT, "briefs"); ruling = records.rulings(rec_dir).get(str(case), {}).get("text")
+    rec_dir = os.environ.get("RECORDS_DIR") or os.path.join(ROOT, "briefs"); ruling = records.rulings(rec_dir).get(str(case), {}).get("text")
     appr = [a for a in records.approvals(rec_dir) if re.search(rf"\bcase {case}\b", a["what"], re.I)]
     return dict(prov=provenance(case), warn=warn, prep=prep(ls, manifest_groups(f), lk, pre, th, pathway, stock(f), pt.group(2), stock_names(f), ef), pathway=pathway, stage=stage, pre=pre, lk=lk, groups=manifest_groups(f), ruling=ruling, appr=appr, case=case, pt=pt.group(1), time=pt.group(2), proc=pt.group(3), lesions=ls, triggers=tr, ratio=ratio, cap=cap, rules=rules, manifest=manifest(f),
                 flags=flags, notes=notes, needs=needs, s1=s1, s2=s2, staged=contrast_hit and bool(s1), devices=f.get("DEVICES", ""), missing=missing, approved=approved, th=th,
@@ -244,9 +244,9 @@ CSS = """@page{size:Letter;margin:0.45in 0.55in 0.6in;@bottom-left{content:'Synt
 .warn{background:#fde8e8;border:1px solid #e3a3a3;color:#8a1c1c}.cards{display:flex;gap:8px;margin:8px 0 2px}.card{flex:1;border:1px solid #d5dbe6;border-radius:8px;padding:8px 10px;background:#f7f9fc}
 .card b{display:block;font-size:17pt;color:#14325c}.card span{font-size:8.5pt;color:#445}h2{font-size:11.5pt;color:#14325c;border-bottom:2px solid #14325c;padding-bottom:2px;margin:11px 0 5px}
 table{border-collapse:collapse;width:100%;font-size:9.2pt}th{background:#e8eef7;text-align:left;padding:4px 7px;border:1px solid #cdd6e4}td{padding:3px 7px;border:1px solid #dbe1ec}tr:nth-child(even) td{background:#fafbfd}
-.out{color:#9a1c1c;font-weight:700}.ok{color:#1c6b3a}ul{margin:4px 0 4px 18px;padding:0}li{margin:2px 0}.ag{margin:6px 0;position:relative}.ag>b{position:absolute;left:0;top:2px}
-.flag{background:#fff7f7;border-left:4px solid #d64545;padding:2px 8px;margin:2px 0 2px 78px;border-radius:3px;font-size:9.3pt}.note{background:#fff4d6;border-left:4px solid #e0a020;padding:2px 8px;margin:2px 0 2px 78px;border-radius:3px;font-size:9.3pt}
-.none{color:#1c6b3a;margin-left:78px;display:block}.sig{margin-top:18px;border:2px solid #14325c;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.out{color:#9a1c1c;font-weight:700}.ok{color:#1c6b3a}ul{margin:4px 0 4px 18px;padding:0}li{margin:2px 0}.ag{margin:6px 0;display:flex;align-items:flex-start;break-inside:avoid}.ag>b{width:78px;flex:none;padding-top:2px}.ag>div,.ag>span.none{flex:1}
+.flag{background:#fff7f7;border-left:4px solid #d64545;padding:2px 8px;margin:2px 0;border-radius:3px;font-size:9.3pt}.note{background:#fff4d6;border-left:4px solid #e0a020;padding:2px 8px;margin:2px 0;border-radius:3px;font-size:9.3pt}
+.none{color:#1c6b3a;display:block}.sig{margin-top:18px;border:2px solid #14325c;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
 .dec div{margin:5px 0;font-size:10pt}.bx{display:inline-block;width:12px;height:12px;border:1.5px solid #14325c;border-radius:2px;margin-right:8px;vertical-align:-2px}
 .stamp{border:3px solid #1c6b3a;color:#1c6b3a;padding:4px 12px;font-weight:800;border-radius:6px;transform:rotate(-3deg)}.stamp.pend{border-color:#8a5a00;color:#8a5a00}tr,.card,.flag{break-inside:avoid}h2{break-after:avoid}
 .def{font-size:8.5pt;color:#334;margin:2px 0 0}.fig{margin:4px 0 8px}.fig svg{height:auto}.lc{border:1px solid #cdd6e4;border-left:5px solid #14325c;border-radius:4px;padding:5px 10px;margin:5px 0;font-size:9.5pt;background:#f7f9fc}.lc span{color:#445;font-size:9pt}"""
@@ -312,8 +312,7 @@ def htm(p):
     strip = lambda x: re.sub(r"^🚩\s*(\*\*FLAG:\*\*)?\s*", "", x)
     rows = "".join(f"<tr><td>{e(l['id'])}</td><td>{e(l['vessel'])}</td><td>{e(l['pct'])}</td><td>{e(l['timi'])}</td><td>{e(l['calcium'])}</td><td>{e(l['flag'])}</td></tr>" for l in p["lesions"]) or ("<tr><td colspan=6>Angiography not yet performed: this is a pre-cath plan</td></tr>" if p["stage"] == "pre-cath" else "<tr><td colspan=6>No angio block in the packet</td></tr>")
     man = "".join(f"<tr><td>{e(a)}</td><td class='{'out' if b.startswith('OUT') else 'ok' if 'on hand' in b else ''}'>{e(b)}</td></tr>" for a, b in p["manifest"])
-    fl = "".join(f"<div class=ag><b>{a.title()}</b>" + "".join(f"<div class=flag>{B(strip(x))}</div>" for x in p["flags"][a]) + "".join(f"<div class=note>⚠ {B(x)}</div>" for x in p["notes"][a])
-                 + ("" if (p["flags"][a] or p["notes"][a]) else "<span class=none>✅ nothing flagged</span>") + "</div>" for a in AGENTS)
+    fl = "".join(f"<div class=ag><b>{a.title()}</b>" + ("<div>" + "".join(f"<div class=flag>{B(strip(x))}</div>" for x in p["flags"][a]) + "".join(f"<div class=note>⚠ {B(x)}</div>" for x in p["notes"][a]) + "</div>" if (p["flags"][a] or p["notes"][a]) else "<span class=none>✅ nothing flagged</span>") + "</div>" for a in AGENTS)
     mtab = "".join("<table style='margin-bottom:6px'>" + (f"<tr><th colspan=2>{e(label)}</th></tr>" if label else "") + "<tr><th>Item (from the packet)</th><th>Stock</th></tr>" + "".join(f"<tr><td>{e(a)}</td><td class='{'out' if b.startswith('OUT') else 'ok' if 'on hand' in b else ''}'>{e(b)}</td></tr>" for a, b in rows) + "</table>" for label, rows in p["groups"])
     shelf = "".join(f"<tr><td style='width:150px'>{e(a)}</td><td>{e(b)}</td></tr>" for a, b in p["prep"]["shelf"])
     pq = "".join(f"<li>{e(q)}</li>" for q in p["prep"]["questions"]) or "<li>None: every check passed.</li>"
@@ -369,8 +368,8 @@ def htm(p):
 <p style="font-size:9.5pt;color:#334">{trig} · Cath report: {e(p['report'])}</p>
 <h2>Rules that fired</h2><ul>{"".join(f"<li>{e(r)}</li>" for r in p['rules'])}</ul>
 {stg}{figure_html(p)}<div style="break-inside:avoid;{'break-before:page' if (p['lesions'] or (p['pre'] and p['pre']['cta'])) else ''}"><h2>Equipment manifest</h2>{mtab}</div>{prept}
-<h2>Flags from the agents</h2>{fl}<p class=def>Relay: Imaging → Equipment, Labs → Meds.</p><h2>Summary and approvals</h2>{summ}
-<div class=sig><div><b>Status</b><br><span style="font-size:9pt;color:#334">{sigtxt}</span></div><div class="stamp{'' if p['approved'] else ' pend'}">{'APPROVED BY CHAIR' if p['approved'] else 'AWAITING CHAIR'}</div></div>
+<div style="break-inside:avoid"><h2>Flags from the agents</h2>{fl}<p class=def>Relay: Imaging → Equipment, Labs → Meds.</p></div><div style="break-inside:avoid"><h2>Summary and approvals</h2>{summ}
+<div class=sig><div><b>Status</b><br><span style="font-size:9pt;color:#334">{sigtxt}</span></div><div class="stamp{'' if p['approved'] else ' pend'}">{'APPROVED BY CHAIR' if p['approved'] else 'AWAITING CHAIR'}</div></div></div>
 <p style="font-size:8.5pt;color:#444;margin-top:10px">Sources: packet ({e(p['prov']['day'])}) · briefs from Imaging, Labs, Meds, Equipment · thresholds.json · evidence table docs/EVIDENCE.md (E1 to E16, mostly secondary summaries, chair verifies). Generated {e(p['stamp'])} by plan.py (template, no model).<br>Provenance: template {e(p['prov']['template'])} · thresholds {e(p['prov']['thresholds'])} · plan.py {e(p['prov']['plan'])} · packet id {e(p['prov']['packet'])}. "ref:" on a flag names a published criterion; it is not an instruction.</p></body></html>"""
 
 def render_pdf(html_path, pdf_path):
