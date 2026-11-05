@@ -1,0 +1,91 @@
+{
+  "_note": "Every clinical cutoff the plan uses. verified=false prints a PROPOSED banner on every plan. logic_verified covers the template logic that is NOT a number here (the four complexity triggers, the stage assignment, Labs' eGFR-under-30 rule); the chair sets each flag only after checking.",
+  "verified": false,
+  "logic_verified": false,
+  "status_text": "PROPOSED values, not yet verified by the chair",
+  "contrast_ratio_cap": 3.7,
+  "contrast_ratio_basis": "Ratio = planned contrast mL ÷ eGFR. The published ratios use creatinine clearance, not eGFR (docs/EVIDENCE.md E1, E2): risk rose from 2 (Gurm 2011) and 3.7 was a discriminating cutoff (Laskey 2007). No guideline sets a limit. The chair confirms the basis.",
+  "likelihood": {
+    "_note": "Illustrative, PROPOSED rule for the indeterminate (pre-cath) pathway. Points are added; the band is a label, never a probability.",
+    "points": {
+      "stress_positive": 2,
+      "stress_equivocal": 1,
+      "typical_angina": 1,
+      "ccta_two_or_more_lesions": 1,
+      "mpi_concordant_with_ccta_lesion": 2,
+      "low_ef": 1,
+      "additional_symptom": 1,
+      "ccta_obstructive": 2,
+      "ccta_intermediate": 1
+    },
+    "bands": [
+      {
+        "max_points": 2,
+        "label": "lower"
+      },
+      {
+        "max_points": 4,
+        "label": "intermediate"
+      },
+      {
+        "max_points": 99,
+        "label": "higher"
+      }
+    ],
+    "low_ef_percent": 40,
+    "territories": {
+      "inferior": [
+        "rca",
+        "lcx"
+      ],
+      "anterior": [
+        "lad"
+      ],
+      "septal": [
+        "lad"
+      ],
+      "apical": [
+        "lad"
+      ],
+      "lateral": [
+        "lcx"
+      ]
+    },
+    "ccta_obstructive_percent": 70,
+    "ccta_left_main_percent": 50,
+    "ccta_intermediate_percent": 50,
+    "_evidence": "Inputs follow CAD-RADS 2.0 and the chest pain guidelines (E5, E6, E13); the point weights are a proposed heuristic (E14)."
+  },
+  "prep": {
+    "_note": "PROPOSED prep rules: when a branch is staged and which device questions the plan puts to the chair. Questions only, never a choice of device. The chair verifies.",
+    "stage_both_branches_from_band": "intermediate",
+    "calcium_modification_or_imaging_keywords": [
+      "atherectomy",
+      "scoring",
+      "cutting",
+      "lithotripsy",
+      "IVUS",
+      "OCT",
+      "intravascular"
+    ],
+    "stent_keywords": [
+      "DES",
+      "stent"
+    ],
+    "balloon_keywords": [
+      "balloon"
+    ],
+    "wire_keywords": [
+      "wire"
+    ],
+    "support_question_ef_percent": 35,
+    "min_stenosis_percent": 50,
+    "_support_note": "35% is a trial-population heuristic; the 2015 SCAI/ACC consensus gives no EF cutoff (E10)."
+  },
+  "contrast_ratio_watch": 2.0,
+  "heart_team": {
+    "_note": "Published Heart Team factors (docs/EVIDENCE.md E7, E8): left main disease; multivessel disease with EF at or below this value. SYNTAX is not computed.",
+    "low_ef_percent": 35
+  },
+  "sources": "docs/EVIDENCE.md (E1 to E16). Primary text read for the 2024 ESC guideline only; the rest from secondary summaries, retrieved 2026-11-04; the chair verifies each row"
+}
