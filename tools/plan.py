@@ -106,7 +106,7 @@ def manifest_groups(f):
         groups.append((label, rows))
     return groups
 
-def prep(ls, groups, lk, pre, th, pathway, stock_all=None, case_time="99:99", names=None):
+def prep(ls, groups, lk, pre, th, pathway, stock_all=None, case_time="99:99", names=None, ef=None):
     names = names or {}
     """Prep check: which branches are staged, what is out of stock, and completeness questions for the chair (devices named in the packet against the lesions). Never names a device."""
     P = th.get("prep", {}); allrows = [r for _, rows in groups for r in rows]; text = " ".join(d for d, _ in allrows).lower(); kw = lambda k: any(w.lower() in text for w in P.get(k, []))
@@ -122,10 +122,10 @@ def prep(ls, groups, lk, pre, th, pathway, stock_all=None, case_time="99:99", na
         if lm and not kw("calcium_modification_or_imaging_keywords"): qs.append(f"Left main or bifurcation on {lm[0]['id']} ({src}): the packet names no intravascular imaging catheter. Chair to decide.")
         if not kw("wire_keywords"): qs.append("No wire is named in the packet's device lines: chair to confirm.")
         if not kw("balloon_keywords") and pathway == "indeterminate": qs.append("No balloon is named for the PCI branch: chair to confirm.")
-    sef = P.get("support_question_ef_percent")
-    if pre and pre.get("ef") is not None and sef is not None and pre["ef"] <= sef:
+    sef = P.get("support_question_ef_percent"); ef_val = ef if ef is not None else (pre["ef"] if pre else None)
+    if ef_val is not None and sef is not None and ef_val <= sef:
         sup = [f"{names.get(k, k)} {n}" for k, (n, _) in (stock_all or {}).items() if any(w in k for w in ("impella", "iabp"))]
-        qs.append(f"EF {pre['ef']}% in the packet. The 2015 SCAI/ACC consensus names high-risk PCI (multivessel, left main, last conduit) with severely reduced EF but gives no EF cutoff (E10). Support devices on the shelf: {', '.join(sup) or 'none in the stock list'}. Chair to decide whether support is needed.")
+        qs.append(f"EF {ef_val}% in the packet. The 2015 SCAI/ACC consensus names high-risk PCI (multivessel, left main, last conduit) with severely reduced EF but gives no EF cutoff (E10). Support devices on the shelf: {', '.join(sup) or 'none in the stock list'}. Chair to decide whether support is needed.")
     if pathway == "indeterminate" and lk:
         both = ["lower", "intermediate", "higher"].index(lk["band"]) >= ["lower", "intermediate", "higher"].index(P.get("stage_both_branches_from_band", "intermediate"))
         scope = "Stage Branch A and Branch B (band " + lk["band"] + ", proposed rule)" if both else "Stage Branch A; Branch B on standby (band " + lk["band"] + ", proposed rule)"
@@ -177,7 +177,7 @@ def build(case, btext, approved=False, th=None):
     s1 = [l for l in ls if l["vessel"].lower() in pt.group(3).lower()]; s2 = [l for l in ls if l not in s1]
     rec_dir = os.path.join(ROOT, "briefs"); ruling = records.rulings(rec_dir).get(str(case), {}).get("text")
     appr = [a for a in records.approvals(rec_dir) if re.search(rf"\bcase {case}\b", a["what"], re.I)]
-    return dict(prep=prep(ls, manifest_groups(f), lk, pre, th, pathway, stock(f), pt.group(2), stock_names(f)), pathway=pathway, stage=stage, pre=pre, lk=lk, groups=manifest_groups(f), ruling=ruling, appr=appr, case=case, pt=pt.group(1), time=pt.group(2), proc=pt.group(3), lesions=ls, triggers=tr, ratio=ratio, cap=cap, rules=rules, manifest=manifest(f),
+    return dict(prep=prep(ls, manifest_groups(f), lk, pre, th, pathway, stock(f), pt.group(2), stock_names(f), ef), pathway=pathway, stage=stage, pre=pre, lk=lk, groups=manifest_groups(f), ruling=ruling, appr=appr, case=case, pt=pt.group(1), time=pt.group(2), proc=pt.group(3), lesions=ls, triggers=tr, ratio=ratio, cap=cap, rules=rules, manifest=manifest(f),
                 flags=flags, notes=notes, needs=needs, s1=s1, s2=s2, staged=contrast_hit and bool(s1), devices=f.get("DEVICES", ""), missing=missing, approved=approved, th=th,
                 angio_missing=angio_missing, unreliable="unreliable" in labs, report=f.get("CATH REPORT", "not in packet"), stamp=time.strftime("%Y-%m-%d %H:%M"))
 

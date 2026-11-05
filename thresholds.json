@@ -4,7 +4,7 @@
   "logic_verified": false,
   "status_text": "PROPOSED values, not yet verified by the chair",
   "contrast_ratio_cap": 3.7,
-  "contrast_ratio_basis": "Ratio = planned contrast mL ÷ eGFR. The published ratios use creatinine clearance, not eGFR (docs/EVIDENCE.md E1, E2): risk rose from 2 (Gurm 2011) and 3.7 was a discriminating cutoff (Laskey 2007). No guideline sets a limit. The chair confirms the basis.",
+  "contrast_ratio_basis": "The published ratios use creatinine clearance, not eGFR (docs/EVIDENCE.md E1, E2): risk rose from 2 (Gurm 2011) and 3.7 was a discriminating cutoff (Laskey 2007). No guideline sets a limit. The chair confirms the basis.",
   "likelihood": {
     "_note": "Illustrative, PROPOSED rule for the indeterminate (pre-cath) pathway. Points are added; the band is a label, never a probability.",
     "points": {

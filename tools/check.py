@@ -5,10 +5,19 @@ usage: check.py --selftest                 offline, no Switch, no model
        check.py --streak                    consecutive clean runs at the end of runs.csv that used the CURRENT prompts
 A MISS (missing planted flag, extra flag, unrecognised line, wrong handoff, forbidden word, timeout) resets the streak; a FORMAT breach is logged only."""
 import argparse, csv, hashlib, json, os, re, sys, time
-HERE = os.path.dirname(os.path.abspath(__file__)); EXP = json.load(open(os.path.join(HERE, "..", "expected.json")))
-CSV = os.path.join(HERE, "..", "runs.csv"); COLS = ["ts", "run", "case", "agent", "secs", "miss", "format", "prompt_hash", "brief"]
+HERE = os.path.dirname(os.path.abspath(__file__)); EXP = json.load(open(os.environ.get("EXPECTED_FILE") or os.path.join(HERE, "..", "expected.json")))  # EXPECTED_FILE: score another day against its own key
+CSV = os.environ.get("RUNS_CSV") or os.path.join(HERE, "..", "runs.csv")  # RUNS_CSV: keep another day's runs out of the main log
+COLS = ["ts", "run", "case", "agent", "secs", "miss", "format", "prompt_hash", "brief"]
 KNOWN = re.compile(r"^(\*\*\[|\*\*[\w ()/-]+:\*\*|🚩|✅|🔁|MISSING:)")
 HANDOFF = re.compile(r"^🔁 \*\*HANDOFF → (\w+):\*\*.*your turn for Case (\d)\s*$")
+
+_PNORM = None
+def packet_norm():
+    """The packet file as lower-case words, so a forbidden word can be allowed when it is quoted verbatim from the packet."""
+    global _PNORM
+    if _PNORM is None:
+        p = os.environ.get("DAY_FILE") or os.path.join(HERE, "..", "day.md"); _PNORM = " ".join(re.findall(r"\w+", open(p).read().lower()))
+    return _PNORM
 
 def score(case, agent, text):
     """-> (misses, format_issues) for one brief."""
@@ -39,7 +48,10 @@ def score(case, agent, text):
     miss += [f"missing planted handoff content /{rx}/" for rx in exp.get("need", []) if not re.search(rx, ho, re.I)]
     scope = EXP["forbid_any"] + (EXP["forbid_imaging"] if agent == "imaging" else []) + (EXP["forbid_equipment_cases_2_5"] if agent == "equipment" and int(case) != 1 else [])
     body = "\n".join(lines[1:])
-    miss += [f"forbidden /{rx}/" for rx in scope if re.search(rx, body, re.I)]
+    for rx in scope:  # a forbidden word is fine when it is the packet's own wording (a quoted contradiction); an instruction in the agent's own words is not
+        for m in re.finditer(rx, body, re.I):
+            ctx = " ".join(re.findall(r"\w+", body[max(0, m.start() - 40):m.end()].lower())[-3:])
+            if ctx not in packet_norm(): miss.append(f"forbidden /{rx}/"); break
     if len(lines) > lim["lines"]: fmt.append(f"{len(lines)} lines (max {lim['lines']})")
     if any(len(l) > EXP["max_line_chars"] for l in lines): fmt.append("line > %d chars" % EXP["max_line_chars"])
     return miss, fmt
@@ -112,6 +124,9 @@ def selftest():
     good_rec = (a1 and a1[0] == "approval" and a1[1]["decision"] == "Allow once" and a1[1]["by"] == "chargenurse" and a1[1]["ts"] == 1793836990.0 and a2[1]["decision"] == "Decline" and a3[1]["decision"] == "Closed"
                 and a4 == ("ruling", ("3", "Case 3 = NO FLAGS RAISED", 1793836985.0)) and a5 is None)
     ok &= bool(good_rec); print("PASS" if good_rec else "FAIL", "approval and ruling records parse (edited-card posts, decisions, who)")
+    global _PNORM; keep = _PNORM; _PNORM = "history heparin infusion stopped overnight med list heparin infusion running"
+    q = score("4", "meds", sample("meds", "4", flags=['history "heparin infusion stopped overnight" · med list "heparin infusion running"'])); r = score("4", "meds", sample("meds", "4", flags=["heparin infusion running"], extra=["stop the heparin infusion now"]))
+    _PNORM = keep; good_q = not any("forbidden" in x for x in q[0]) and any("forbidden" in x for x in r[0]); ok &= good_q; print("PASS" if good_q else "FAIL", "a forbidden word quoted from the packet passes; the same word as an instruction is still a miss")
     t = open(os.path.join(HERE, "..", "template.yaml")).read(); cmds = re.findall(r"bash command: `([^`]+)`", t)
     short = all(len(x) < 300 for x in cmds) and "briefs/case-N" in t and t.count("<<'EOF'") <= 2; ok &= short; print("PASS" if short else "FAIL", "Clerk approval commands are short (no pasted briefs)")
     print("SELFTEST", "OK" if ok else "FAILED"); return 0 if ok else 1
