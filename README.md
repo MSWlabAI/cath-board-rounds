@@ -179,6 +179,9 @@ The author's preflight (`prep_check.sh`) lives outside this repo; `RUNBOOK.md` l
   Nothing has been independently clinician-reviewed.
 - Packet text goes to the model providers the agents run on (Anthropic via Claude Code, xAI via Cursor). All of it is synthetic.
 - Mattermost bot, token, OAuth and thread settings are loosened for a local demo only.
+- Models: the four Claude Code agents ran on the user-level Claude Code settings of the author's machine (model `sonnet`, effort `xhigh`, as recorded in `freeze.txt`); Imaging ran on the Cursor CLI's default model on that machine (Grok 4.5 High Fast when the freeze was taken; not pinned). Rerunning on other defaults can change the briefs.
+- History: this repo's git history starts on 2026-11-04 as an import of a private working copy; earlier edits are not in it. Nothing in it was copied from another project except the declared pre-window outline.
+- Leak guard: `tools/hooks/pre-commit` is an optional gitleaks and private-string check (install line inside it); the author's own blocked-name list is kept out of the repo.
 
 ## License
 

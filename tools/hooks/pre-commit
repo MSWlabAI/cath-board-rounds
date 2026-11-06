@@ -1,0 +1,14 @@
+#!/bin/sh
+# Optional leak guard. Install: cp tools/hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Needs gitleaks (https://github.com/gitleaks/gitleaks). Put names you must never publish (one regex per line) in the untracked file .private-patterns.
+gitleaks protect --staged --redact -v || exit 1
+GENERIC="/Use""rs/[a-z]|/ho""me/[a-z]|\.ts""\.net|file:/""/|BEGIN [A-Z ]*PRIVATE"''  # built from pieces so this file does not match its own patterns
+[ -f .private-patterns ] && PRIV=$(paste -sd'|' .private-patterns) || PRIV='^$'
+files=$(git diff --cached --name-only --diff-filter=ACM)
+pyc=$(echo "$files" | grep -E "__pycache__|\.pyc$"); [ -n "$pyc" ] && { echo "BLOCKED: compiled Python staged:"; echo "$pyc"; exit 1; }
+bad=$(echo "$files" | grep -v '\.pdf$' | xargs -I{} grep -InE "$GENERIC|$PRIV" {} 2>/dev/null)
+[ -n "$bad" ] && { echo "BLOCKED: private string(s) in staged files:"; echo "$bad"; exit 1; }
+for f in $(echo "$files" | grep -i '\.pdf$'); do  # PDFs are binary: scan their strings too
+  git show ":$f" | strings -a | grep -E -q "$GENERIC|$PRIV" && { echo "BLOCKED: private string in PDF $f"; exit 1; }
+done
+exit 0
