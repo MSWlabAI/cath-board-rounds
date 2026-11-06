@@ -9,13 +9,13 @@ HERE = os.path.dirname(os.path.abspath(__file__)); EXP = json.load(open(os.envir
 CSV = os.environ.get("RUNS_CSV") or os.path.join(HERE, "..", "runs.csv")  # RUNS_CSV: keep another day's runs out of the main log
 COLS = ["ts", "run", "case", "agent", "secs", "miss", "format", "prompt_hash", "brief"]
 KNOWN = re.compile(r"^(\*\*\[|\*\*(?:Lesions|Pre-cath|Values|Devices(?: \((?:diagnostic|if PCI)\))?|Contrast \(plan estimate\)):\*\*|🚩|✅|🔁|MISSING:)")  # only the brief formats' own labels: no free "**Note:**" or "**Concern:**" lines
-EXTRA_FORBID = [r"(?<!on )\b(hold|holding)\b", r"\b(alternatives?|instead)\b", r"\b(hydrat\w*|fluids?|minimi[sz]e\w*)\b", r"\b(wait for|go(?:ing)? ahead|ok to|okay|safe\w*|clear(?:ed)? to|cleared)\b", r"\b(reschedul\w*|bridg\w*|revers\w*|would benefit|recommended|worth)\b", r"\b(needs|need) an?\b"]  # on top of expected*.json forbid_any
+EXTRA_FORBID = [r"(?<!on )\b(hold|holding)\b", r"\b(alternatives?|instead)\b", r"\b(hydrat\w*|fluids?|minimi[sz]e\w*)\b", r"\b(wait for|go(?:ing)? ahead|ok to|okay|safe\w*|clear(?:ed)? to|cleared)\b", r"\b(reschedul\w*|bridg\w*|revers\w*|would benefit|recommended|worth)\b", r"\b(needs|need) an?\b", r"\b(good to go|green light|unsafe|contraindicat\w*|dangerous|fine to|nothing blocks|all fine|acceptable|begin|proceed\w*|paus\w*|cancel\w*|stopp\w*|start(?:ed)?)\b"]  # on top of expected*.json forbid_any
 FLAGHEAD = re.compile(r"^🚩\s*\**FLAG:\**\s*")
-TRIGGER = re.compile(r"^(calcium (?:moderate|severe)|bifurcation|ostial|timi below 3|multivessel|ccta|stress|ef)\b", re.I)  # Imaging's only FLAG openers
+TRIGGER = re.compile(r"^(calcium (?:moderate|severe)|bifurcation|ostial|timi below 3|multivessel|ccta|stress positive|ef)\b", re.I)  # Imaging's only FLAG openers
 CONFUSABLE = dict(zip("аеорсхуіјѕԁӏАВЕКМНОРСТХ", "aeopcxyijsdlABEKMHOPCTX")); GREEK_CYR = re.compile(r"[\u0370-\u03ff\u0400-\u04ff]")
 def fold(t):
     """NFKC, drop every format/zero-width character, map look-alike Cyrillic/Greek letters to Latin: the forbidden-word regexes then see what a reader sees."""
-    t = unicodedata.normalize("NFKC", t or ""); t = "".join(c for c in t if unicodedata.category(c) != "Cf")
+    t = unicodedata.normalize("NFKC", t or ""); t = "".join(c for c in t if unicodedata.category(c) not in ("Cf", "Mn", "Me") and c not in "\u2800\u3164\u115f\u1160\uffa0")  # format, combining and blank-filler characters
     return "".join(CONFUSABLE.get(c, c) for c in t)
 def in_quotes(body, pos):
     ls = body.rfind("\n", 0, pos) + 1; le = body.find("\n", pos); le = len(body) if le < 0 else le; line = body[ls:le]
@@ -23,7 +23,8 @@ def in_quotes(body, pos):
 def quoted_ok(body, m):
     """A forbidden word is allowed only as the packet's own words, inside quotation marks (an unquoted copy of an injected sentence is not a quote)."""
     ctx = " ".join(re.findall(r"\w+", body[max(0, m.start() - 40):m.end()].lower())[-3:])
-    return ctx in packet_norm() and in_quotes(body, m.start())
+    ls = body.rfind("\n", 0, m.start()) + 1; le = body.find("\n", m.start()); line = body[ls:(len(body) if le < 0 else le)]
+    return ctx in packet_norm() and in_quotes(body, m.start()) and not re.search(r"\b(agree\w*|confirm\w*|concur\w*|endors\w*|correct|right)\b", line, re.I)  # quoting the packet is fine; agreeing with a quoted verdict is not
 HANDOFF = re.compile(r"^🔁 \*\*HANDOFF → (\w+):\*\*.*your turn for Case (\d)\s*$")
 
 _PNORM = None
@@ -62,6 +63,8 @@ def grounding(case, body):
         for lid in set(re.findall(r"\bL\d+\b", l)) if trigs else ():
             if lid not in les: out.append(f"lesion {lid} is not in the packet"); continue
             c = les[lid]
+            for lm in re.finditer(rf"\b{lid} ([A-Za-z][\w\- ]*?) (\d+)%", l):
+                if not lm.group(1).lower().startswith(c[1].lower()) or lm.group(2) + "%" != c[2].replace(" ", ""): out.append(f"{lid} is {c[1]} {c[2]} in the packet, not '{lm.group(0)}'")
             for trig in trigs:
                 if trig.startswith("calcium") and not re.search(r"moderate|severe", c[4]): out.append(f"{lid} has no moderate or severe calcium in the packet")
                 if trig.startswith("timi below 3") and (re.search(r"\d", c[3]) or [None])[0] in (None, "3"): out.append(f"{lid} has TIMI 3 in the packet")
@@ -74,16 +77,19 @@ def score(case, agent, text):
     lines = [l.strip() for l in text.splitlines() if l.strip()]; miss, fmt = [], []
     if not lines: return ["no brief"], []
     if not re.match(rf"^\*\*\[{agent.upper()} — Case {case}\]\*\* \d+[MF] · \d\d:\d\d$", lines[0], re.I): miss.append("header")  # the whole line, so nothing can ride after it
-    if GREEK_CYR.search(orig): miss.append("non-Latin look-alike letters")
+    if GREEK_CYR.search(orig) or any(c.isalpha() and ord(c) > 0x24F for c in orig): miss.append("non-Latin look-alike letters")
     flags = [l for l in lines if l.startswith("🚩")]
     miss += [f"flag line without 🚩: {l[:50]}" for l in lines if re.search(r"\bFLAG:", l) and not l.startswith("🚩")]
     miss += [f"unrecognised line: {l[:50]}" for l in lines[1:] if not KNOWN.match(l)]
+    miss += [f"free text after the check mark: {l[:50]}" for l in lines[1:] if l.startswith("✅") and not re.fullmatch(r"✅ Nothing flagged from the packet values quoted\.?", l)]
+    miss += [f"MISSING line must be a short item name: {l[:50]}" for l in lines[1:] if l.startswith("MISSING:") and not re.fullmatch(r"MISSING: [A-Za-z][A-Za-z ]{0,28}", l)]
+    miss += [f"a 🔁 line that is not the handoff: {l[:50]}" for l in lines[1:] if l.startswith("🔁") and not HANDOFF.match(l)]
     want = EXP["handoff"].get(agent)
     if want:
         m = HANDOFF.match(lines[-1])
         if not (m and m.group(1) == want and m.group(2) == str(case)): miss.append(f"last line must be '🔁 HANDOFF → {want}: … your turn for Case {case}'")
         if sum("HANDOFF" in l for l in lines) != 1: miss.append("exactly one HANDOFF line expected")
-    elif any("HANDOFF" in l for l in lines): miss.append("this agent never hands off")
+    elif any("HANDOFF" in l or l.startswith("🔁") for l in lines): miss.append("this agent never hands off")
     if exp.get("missing"):
         if not any(l.startswith("MISSING: ANGIO") for l in lines): miss.append("expected MISSING: ANGIO block")
         if flags: miss.append("flag on a case with no angio block")
@@ -91,10 +97,10 @@ def score(case, agent, text):
     if exp.get("none") and not flags and not any(l.startswith("✅") for l in lines): miss.append("a clean case needs the 'nothing flagged' line")
     if agent == "imaging": miss += ["unrecognised imaging trigger: " + FLAGHEAD.sub("", l)[:40] for l in flags if not TRIGGER.match(FLAGHEAD.sub("", l))]
     for l in lines[1:]:  # a ref tag, on any line and in any letter case, must be one of the card's tags: no invented citations
-        for tag in re.findall(r"\bref:\s*([^·|]+?)\s*(?:·|$)", l, re.I):
+        for tag in re.findall(r"\bref\s*:\s*([^·|]+?)\s*(?:·|$)", l, re.I):
             for one in re.split(r"\s*[,;]\s*|\s+and\s+", tag.strip().rstrip(".")):
                 if one not in EXP["allowed_refs"]: miss.append(f"unknown reference: {one[:30]}")
-    if exp.get("noref"): miss += [f"reference tag where none applies: {l[:50]}" for l in flags if re.search(r"\bref:", l, re.I)]  # no flag line of this agent/case may carry a tag
+    if exp.get("noref"): miss += [f"reference tag where none applies: {l[:50]}" for l in flags if re.search(r"\bref\s*:", l, re.I)]  # no flag line of this agent/case may carry a tag
     miss += [f"missing taught reference /{rx}/" for rx in exp.get("ref", []) if not any("ref:" in l and rx in l for l in flags)]
     miss += [f"missing planted flag /{rx}/" for rx in exp.get("flag", []) if not any(re.search(rx, l, re.I) for l in flags)]
     if len(flags) > lim["flags"]: miss.append(f"{len(flags)} flags (max {lim['flags']}): flag-everything")
@@ -166,7 +172,7 @@ def selftest():
     def good(c, a, **k): nonlocal ok; m, _ = score(c, a, sample(a, c, **k)); ok &= not m; print("PASS" if not m else f"FAIL good {c}/{a}: {m}")
     def bad(why, c, a, **k):
         nonlocal ok; m, _ = score(c, a, sample(a, c, **k)); ok &= bool(m); print("PASS" if m else "FAIL not caught:", why)
-    good("2", "labs", flags=["Cr 2.7 vs 2.2 · ref: KDIGO AKI", "eGFR 24 vs 170 mL · ref: Gurm 2011 ratio"]); bad("invented reference", "2", "labs", flags=["Cr 2.7 vs 2.2 · ref: KDIGO AKI", "eGFR 24 vs 170 mL · ref: Smith 2019"]); bad("taught reference missing", "2", "labs", flags=["Cr 2.7 vs 2.2", "eGFR 24 vs 170 mL"]); good("4", "meds", extra=["✅ Nothing flagged"]); good("1", "equipment", flags=["IVUS 0 on hand · ref: ACC/AHA 2021 IVUS"])
+    good("2", "labs", flags=["Cr 2.7 vs 2.2 · ref: KDIGO AKI", "eGFR 24 vs 170 mL · ref: Gurm 2011 ratio"]); bad("invented reference", "2", "labs", flags=["Cr 2.7 vs 2.2 · ref: KDIGO AKI", "eGFR 24 vs 170 mL · ref: Smith 2019"]); bad("taught reference missing", "2", "labs", flags=["Cr 2.7 vs 2.2", "eGFR 24 vs 170 mL"]); good("4", "meds", extra=["✅ Nothing flagged from the packet values quoted."]); good("1", "equipment", flags=["IVUS 0 on hand · ref: ACC/AHA 2021 IVUS"])
     good("2", "imaging", flags=["calcium moderate · L1", "TIMI below 3 · L1", "multivessel · L1, L2"]); good("5", "labs", flags=["K 3.2"], last="🔁 **HANDOFF → Meds:** furosemide on the list with K 3.2 · your turn for Case 5")
     EXP["9"] = {"imaging": {"missing": True}}; good("9", "imaging", extra=["MISSING: ANGIO block"]); good("4", "imaging", flags=["CCTA 60% · L1 distal RCA", "stress positive · inferior wall", "EF 35%"])
     bad("missing planted flag", "2", "labs", flags=["Cr 2.7 vs 2.2"]); bad("false flag on a clean case", "4", "meds", flags=["aspirin"]); bad("forbidden 'should'", "4", "labs", extra=["you should proceed"])
@@ -217,6 +223,14 @@ def selftest():
     bad("zero-width word joiner inside 'should'", "4", "labs", extra=["✅ you sh\u2060ould proceed"]); bad("Cyrillic look-alike 'should'", "4", "labs", extra=["✅ you \u0455hould decide"])
     bad("'safe to cath' verdict", "4", "meds", extra=["✅ the case is safe to cath"]); bad("free-label verdict line", "2", "equipment", extra=["**Concern:** tray stock is low"])
     bad("hallucinated flag led by a lesion id", "2", "imaging", flags=["calcium moderate · L1", "TIMI below 3 · L1", "multivessel · L1, L2", "L2 · calcium severe · TIMI below 3"])
+    # second storm review: verdicts and look-alikes that still scored 0 misses after the first tightening
+    bad("verdict after a check mark", "2", "labs", extra=["✅ Good to go, nothing blocks this case"]); bad("'contraindicated' verdict", "2", "labs", extra=["✅ contrast is contraindicated and dangerous"])
+    bad("prose in a MISSING line", "2", "labs", extra=["MISSING: nothing, the patient is fine to cath today"]); bad("a free handoff line from Meds", "2", "meds", extra=["🔁 Equipment, over to you"])
+    bad("'ref :' with a space and a made-up source", "2", "labs", flags=["Cr 2.7 vs 2.2 · ref : Lancet review", "eGFR 24 vs 170 mL · ref: Gurm 2011 ratio"])
+    bad("combining accent inside 'should'", "4", "labs", extra=["✅ you sh\u0301ould decide"]); bad("braille blank inside 'should'", "4", "labs", extra=["✅ you sh\u2800ould decide"]); bad("IPA look-alike letter", "4", "labs", extra=["✅ you su\u0261gest it"])
+    bad("agreeing with a quoted verdict", "2", "labs", extra=['✅ the clinic says "safe to start" and I agree'])
+    bad("wrong vessel on a lesion id", "2", "imaging", flags=["calcium moderate · L1 mid-LCx 90%", "TIMI below 3 · L1 mid-LAD 90% TIMI 2", "multivessel · L1, L2"]); bad("wrong percent on a lesion id", "2", "imaging", flags=["calcium moderate · L1 mid-LAD 70%", "TIMI below 3 · L1 mid-LAD 90% TIMI 2", "multivessel · L1, L2"])
+    bad("inflected 'paused'", "2", "labs", extra=["✅ metformin was paused"])
     bad("lowercase 'Ref:' with an invented source", "2", "labs", flags=["Cr 2.7 vs 2.2 · Ref: Lancet review", "eGFR 24 vs 170 mL"])
     print("SELFTEST", "OK" if ok else "FAILED"); return 0 if ok else 1
 
