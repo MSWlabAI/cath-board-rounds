@@ -199,4 +199,4 @@ The author's preflight (`prep_check.sh`) lives outside this repo; `RUNBOOK.md` l
 
 ## License
 
-TODO (owner to decide).
+Apache License 2.0 (see [`LICENSE`](LICENSE)). It covers the code, the agent prompts, the synthetic packets and the sample PDFs. The licence's disclaimer of warranty and liability applies, and the project is not for clinical use.
