@@ -1,6 +1,6 @@
 # freeze.txt: sha256 of everything that defines behaviour. Regenerate with tools/freeze.py; a diff means the streak restarts.
 
-a0c1d013d2ceb421190d7c4d21db9408beb82b214a8719d9857cc479bf647199  template.yaml
+6fbf68f00136f20ef85be0bab2e2ce89f8425c1d725ed0f56e9feb7aa0059405  template.yaml
 fd5dd69fe61a9ab4d856ecd19ec3f65bbd7eeba70593350087e704b1ff80223d  day.md
 2b1e7a2a673bf0c90be2d10e9e37d10b7c3d53a0a86bf70950057cb24034ea44  expected.json
 51ec501c230a4ae8004b5fea135b9d0777dbd3d935efab50f599d51ba69237de  thresholds.json
@@ -12,7 +12,7 @@ cf3a76267addb5d3c4c3780ae3bcfa8fd88995e194ff0c1680b502d05b2fd474  tools/ask.py
 51f3b3616f349abb25cd8ce7901377a38b553ef657c315c56ce62b59f3152875  tools/board_final.py
 1aaef4019ff34c37276125014a390601d61ad5950b548568e9745339466452f7  tools/board_pdf.py
 d24ea8234bfb5216e9ddd18de0abbfd16f13b37d95bca157edd01b0f682da9a7  tools/callback_forward.py
-5b5ddc4dee5605381995f2ae6edc362731946e252eee3735784a87f6c9af3a03  tools/check.py
+134bdfef819d1e3df8330975d7f1a90f1b06b107590f6eec1e0dce2194a94a12  tools/check.py
 fa8f586462855ed7b79ff6da541a3f9d68d00a2409feac0e00d41aa6427a9eb1  tools/clerk.py
 7d4553bda09c9ec54648ccb5db4971870aa856fe6a0cdc0a44c0af26b503fee2  tools/dryrun.py
 e31c520384bdd6f597cf61be77eda892828129c80549737021a65dbfa56d9590  tools/freeze.py
@@ -35,12 +35,12 @@ e19b5b68875cd07f862b86893d96683b490ff161fecd7d0ee2fad9c46359d569  tools/rescore.
 8b6bc2291d903314  labs       claude  3845 chars
 82011d8cfa96efdd  meds       claude  3736 chars
 ff770d86bddd3fdc  equipment  claude  3582 chars
-7aecd2b38b2d42af  imaging    cursor  5070 chars
+7aecd2b38b2d42af  imaging    claude  5070 chars
 e8fbeb0e79860acc  clerk      claude  5059 chars
 
 # tools
-claude: 2.1.318 (Claude Code)
+claude: 2.1.319 (Claude Code)
 cursor-agent: 2026.10.22-27dcf5f
 python: 3.14.7
-cursor model (default on this machine): Grok 4.5 High Fast
+cursor model (default on this machine): Auto
 claude room agents inherit the user-level Claude Code settings: model=sonnet effort=xhigh

@@ -48,7 +48,7 @@ resources:
   imaging:
     type: agent
     display_name: Imaging
-    provider: cursor
+    provider: claude  # was cursor (Grok) for every recorded run; Cursor's weekly usage limit was reached before filming. Swap back to `cursor` to reproduce the recorded setup.
     machine: "{machine}"
     directory: "{$agents_dir}/cath-imaging"
     addressing: owner-agents

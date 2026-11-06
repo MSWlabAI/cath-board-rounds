@@ -143,7 +143,7 @@ def score_review(case, text, briefs=None):
 def prompt_hash():
     import sync_prompts
     t = open(os.path.join(HERE, "..", "template.yaml")).read()
-    return hashlib.sha256("".join(txt for _, _, _, txt in sync_prompts.agents(t)).encode()).hexdigest()[:12]
+    return hashlib.sha256("".join(f"{prov}:{txt}" for _, _, prov, txt in sync_prompts.agents(t)).encode()).hexdigest()[:12]  # the provider is part of the identity: a run on another harness is not the same run
 
 def streak():
     if not os.path.exists(CSV): return 0
