@@ -239,7 +239,7 @@ def md(p):
     L += ["", "## Summary and approvals", f"- Ruling recorded: {p['ruling'] or 'none yet'}", "- Flags: " + " · ".join(f"{a.title()} {len(p['flags'][a])}" for a in AGENTS)]
     L += [f"- Approval {a['request']}: {a['decision']} by {a['by']} at {records.when(a['ts'])}" for a in p["appr"]]
     if p["approved"]: L += [f"- This plan: Allow once by the chair on the Switch card, {p['stamp']}"]
-    L += ["", f"Contrast ratio: {p['ratio'] if p['ratio'] is not None else 'n/a'} (proposed cap {p['cap']}; contrast mL ÷ eGFR)" + (" · eGFR flagged unreliable in the packet" if p["unreliable"] else ""),
+    L += ["", f"Contrast ratio: {p['ratio'] if p['ratio'] is not None else 'n/a'} (published cutoff {p['cap']}, Laskey 2007; contrast mL ÷ eGFR)" + (" · eGFR flagged unreliable in the packet" if p["unreliable"] else ""),
           f"Thresholds: {p['th']['status_text'] if not p['th']['verified'] else 'verified by the chair'} · {'template logic verified' if p['th'].get('logic_verified') else LOGIC}", "",
           "**Status: " + ("APPROVED by the chair" if p["approved"] else "AWAITING CHAIR RULING") + "**", f"_Provenance: template {p['prov']['template']} · thresholds {p['prov']['thresholds']} · plan.py {p['prov']['plan']} · {p['prov']['day']} · packet id {p['prov']['packet']}_"]
     return "\n".join(L) + "\n"
@@ -369,7 +369,7 @@ def htm(p):
 {"<div class='strip warn'>ANGIO DATA MISSING: complexity and staging were not assessed. Nothing on this page is a clearance.</div>" if p['angio_missing'] else ""}
 {"<div class='strip'>PRE-CATH PLAN: angiography has not been done. The likelihood is a label from a proposed points rule, not a probability, and the packet lists equipment for both branches.</div>" if p['stage'] == 'pre-cath' else ""}
 {"" if (th['verified'] and th.get('logic_verified')) else "<div class='strip warn'>" + e(("Thresholds: " + th['status_text'] + ". ") if not th['verified'] else "") + e(("" if th.get('logic_verified') else LOGIC_SHORT)) + "</div>"}
-<div class=cards><div class=card><b>{nf}</b><span>flags from 4 agents</span></div><div class=card><b>{ratio}</b><span>contrast ratio (proposed cap {p['cap']})</span></div><div class=card><b>{third}</b><span>{e(third_label)}</span></div><div class=card><b>{sum(1 for _, s in p['manifest'] if s.startswith('OUT'))}</b><span>devices out of stock</span></div></div>
+<div class=cards><div class=card><b>{nf}</b><span>flags from 4 agents</span></div><div class=card><b>{ratio}</b><span>contrast ratio (published cutoff {p['cap']}, Laskey)</span></div><div class=card><b>{third}</b><span>{e(third_label)}</span></div><div class=card><b>{sum(1 for _, s in p['manifest'] if s.startswith('OUT'))}</b><span>devices out of stock</span></div></div>
 <p class=def>Contrast ratio = planned contrast (mL) ÷ eGFR. {e(th.get('contrast_ratio_basis', ''))}{e(caveat)}</p>{precard}
 <h2>Lesion map (Imaging)</h2><table><tr><th>Lesion</th><th>Vessel</th><th>Stenosis</th><th>TIMI</th><th>Calcium</th><th>Flag</th></tr>{rows}</table>
 <p style="font-size:9.5pt;color:#334">{trig} · Cath report: {e(p['report'])}</p>

@@ -4,7 +4,7 @@
   "logic_verified": false,
   "status_text": "PROPOSED values, not yet verified by the chair",
   "contrast_ratio_cap": 3.7,
-  "contrast_ratio_basis": "The published ratios use creatinine clearance, not eGFR (docs/EVIDENCE.md E1, E2): risk rose from 2 (Gurm 2011) and 3.7 was a discriminating cutoff (Laskey 2007). No guideline sets a limit; Gurm: risk clearest at 3 or more, authors advise below 3 and preferably 2; Laskey 3.7 is a discriminating cutoff, not a threshold for harm. The chair confirms the basis.",
+  "contrast_ratio_basis": "The published ratios use creatinine clearance, not eGFR (docs/EVIDENCE.md E1, E2): risk rose from 2 (Gurm 2011) and 3.7 was a discriminating cutoff (Laskey 2007). No guideline sets a limit; Gurm: risk rose from 2 and was clearest at 3 or more (EVIDENCE E1 does not record an advised limit); Laskey 3.7 is a discriminating cutoff, not a threshold for harm. The chair confirms the basis.",
   "likelihood": {
     "_note": "Illustrative, PROPOSED rule for the indeterminate (pre-cath) pathway. The weights are the author's, not derived from data. Points are added; the band is a label, never a probability.",
     "points": {

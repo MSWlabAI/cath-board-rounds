@@ -3,6 +3,8 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 
 **66M, 74 kg · 13:00 · PCI to left main bifurcation and mid-RCA with Impella CP planned (ischemic cardiomyopathy)**
 
+> UNVERIFIED: thresholds and rules are proposals, not verified by the chair (PROPOSED values, not yet verified by the chair). 'ref:' tags name criteria from mostly secondary summaries.
+
 ## Lesion map
 | Lesion | Vessel | Stenosis | TIMI | Calcium | Flag |
 |---|---|---|---|---|---|
@@ -13,7 +15,7 @@ Angio findings flagged: 3 of 4 (calcium moderate or severe; bifurcation, ostial 
 
 ## Rules that fired
 - Contrast ratio 2.0 is at or above 2.0, where risk began to rise in the Gurm 2011 registry (E1; creatinine clearance, not eGFR). Chair to decide.
-- Heart Team factors present (2021 ACC/AHA/SCAI; E7, E8): left main disease. SYNTAX score is not computed here. Chair to decide on Heart Team review.
+- Heart Team factors present (2021 ACC/AHA/SCAI; E7, E8): left main disease. SYNTAX score is not computed here. These are packet factors; the chair decides what follows.
 
 ## Equipment manifest
 | Item | Stock |
@@ -49,7 +51,7 @@ Angio findings flagged: 3 of 4 (calcium moderate or severe; bifurcation, ostial 
 🚩 **FLAG:** Cr 1.4 vs 1.1 yesterday · ref: KDIGO AKI
 🚩 **FLAG:** eGFR 54 vs est. contrast 110 mL (calc: 110 mL / eGFR 54 = 2.0) · ref: Gurm 2011 ratio
 **Meds**
-✅ none
+✅ none (from the packet values quoted)
 **Equipment**
 🚩 **FLAG:** Impella CP 0 on hand · plan: "Impella CP planned" · STOCK: "no resupply scheduled"
 
@@ -57,8 +59,8 @@ Angio findings flagged: 3 of 4 (calcium moderate or severe; bifurcation, ostial 
 - Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 2 · Meds 0 · Equipment 1
 
-Contrast ratio: 2.0 (proposed cap 3.7; contrast mL ÷ eGFR)
+Contrast ratio: 2.0 (published cutoff 3.7, Laskey 2007; contrast mL ÷ eGFR)
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py c9468ccb46 · day2.md · packet id n/a_
+_Provenance: template a0c1d013d2 · thresholds 51ec501c23 · plan.py d0e4e2d2e3 · day2.md · packet id n/a_

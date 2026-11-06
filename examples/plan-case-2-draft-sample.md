@@ -3,6 +3,8 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 
 **74M, 78 kg · 09:30 · PCI to mid-LAD (NSTEMI)**
 
+> UNVERIFIED: thresholds and rules are proposals, not verified by the chair (PROPOSED values, not yet verified by the chair). 'ref:' tags name criteria from mostly secondary summaries.
+
 ## Lesion map
 | Lesion | Vessel | Stenosis | TIMI | Calcium | Flag |
 |---|---|---|---|---|---|
@@ -53,14 +55,14 @@ Angio findings flagged: 3 of 4 (calcium moderate or severe; TIMI flow below 3; m
 🚩 **FLAG:** heparin infusion running · radial access
 🚩 **FLAG:** metformin on the list · Contrast given at the diagnostic angiogram yesterday
 **Equipment**
-✅ none
+✅ none (from the packet values quoted)
 
 ## Summary and approvals
 - Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 2 · Meds 2 · Equipment 0
 
-Contrast ratio: 7.1 (proposed cap 3.7; contrast mL ÷ eGFR) · eGFR flagged unreliable in the packet
+Contrast ratio: 7.1 (published cutoff 3.7, Laskey 2007; contrast mL ÷ eGFR) · eGFR flagged unreliable in the packet
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py c9468ccb46 · day.md · packet id n/a_
+_Provenance: template a0c1d013d2 · thresholds 51ec501c23 · plan.py d0e4e2d2e3 · day.md · packet id n/a_

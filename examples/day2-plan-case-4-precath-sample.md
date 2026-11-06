@@ -3,6 +3,8 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 
 **70F, 66 kg · 11:30 · PCI to mid-RCA (inferior STEMI, day 2)**
 
+> UNVERIFIED: thresholds and rules are proposals, not verified by the chair (PROPOSED values, not yet verified by the chair). 'ref:' tags name criteria from mostly secondary summaries.
+
 ## Lesion map
 | Lesion | Vessel | Stenosis | TIMI | Calcium | Flag |
 |---|---|---|---|---|---|
@@ -42,14 +44,14 @@ Angio findings flagged: 1 of 4 (TIMI flow below 3)
 🚩 **FLAG:** history "heparin infusion stopped overnight" · med list "heparin infusion running (last aPTT 91 s at 05:15)"
 🚩 **FLAG:** heparin infusion running · PCI to mid-RCA, radial access
 **Equipment**
-✅ none
+✅ none (from the packet values quoted)
 
 ## Summary and approvals
 - Ruling recorded: none yet
 - Flags: Imaging 1 · Labs 1 · Meds 2 · Equipment 0
 
-Contrast ratio: 1.3 (proposed cap 3.7; contrast mL ÷ eGFR)
+Contrast ratio: 1.3 (published cutoff 3.7, Laskey 2007; contrast mL ÷ eGFR)
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py c9468ccb46 · day2.md · packet id n/a_
+_Provenance: template a0c1d013d2 · thresholds 51ec501c23 · plan.py d0e4e2d2e3 · day2.md · packet id n/a_

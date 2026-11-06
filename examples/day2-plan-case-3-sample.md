@@ -3,6 +3,8 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 
 **59M, 102 kg · 10:00 · diagnostic cath ± PCI (exertional chest pressure)**
 
+> UNVERIFIED: thresholds and rules are proposals, not verified by the chair (PROPOSED values, not yet verified by the chair). 'ref:' tags name criteria from mostly secondary summaries.
+
 ## Pre-cath findings (indeterminate pathway)
 - Stress: positive stress echo, anterior wall
 - EF: 55%
@@ -24,7 +26,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 Angio findings flagged: 0 of 4
 
 ## Rules that fired
-- Likelihood band (proposed rule, 9 points): higher. A label from a points rule, not a probability. Chair to decide; equipment is staged for both branches below.
+- Likelihood band (proposed rule, 9 points): higher. A label from a points rule, not a probability. Chair to decide; the packet lists equipment for both branches below.
 
 ## Equipment manifest
 **Branch A · stays diagnostic**
@@ -40,7 +42,7 @@ Angio findings flagged: 0 of 4
 | standard PCI tray | 4 on hand |
 
 ## Prep check
-- Scope: Stage Branch A and Branch B (band higher, proposed rule)
+- Scope: The packet lists Branch A and Branch B (band higher, proposed rule)
 - Stock: OUT: DES 3.0x18 mm
 - On the shelf · Guide catheters: 6F guide 4, 7F guide 2
 - On the shelf · Diagnostic catheters: 5F diagnostic catheters 8
@@ -70,8 +72,8 @@ Angio findings flagged: 0 of 4
 - Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 2 · Meds 1 · Equipment 1
 
-Contrast ratio: n/a (proposed cap 3.7; contrast mL ÷ eGFR)
+Contrast ratio: n/a (published cutoff 3.7, Laskey 2007; contrast mL ÷ eGFR)
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py c9468ccb46 · day2.md · packet id n/a_
+_Provenance: template a0c1d013d2 · thresholds 51ec501c23 · plan.py d0e4e2d2e3 · day2.md · packet id n/a_

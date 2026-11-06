@@ -3,6 +3,8 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 
 **62F, 70 kg · 12:30 · diagnostic cath ± PCI (exertional angina)**
 
+> UNVERIFIED: thresholds and rules are proposals, not verified by the chair (PROPOSED values, not yet verified by the chair). 'ref:' tags name criteria from mostly secondary summaries.
+
 ## Pre-cath findings (indeterminate pathway)
 - Stress: positive MPI, inferior wall
 - EF: 35%
@@ -23,7 +25,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 Angio findings flagged: 0 of 4
 
 ## Rules that fired
-- Likelihood band (proposed rule, 8 points): higher. A label from a points rule, not a probability. Chair to decide; equipment is staged for both branches below.
+- Likelihood band (proposed rule, 8 points): higher. A label from a points rule, not a probability. Chair to decide; the packet lists equipment for both branches below.
 
 ## Equipment manifest
 **Branch A · stays diagnostic**
@@ -37,7 +39,7 @@ Angio findings flagged: 0 of 4
 | standard PCI tray | 3 on hand |
 
 ## Prep check
-- Scope: Stage Branch A and Branch B (band higher, proposed rule)
+- Scope: The packet lists Branch A and Branch B (band higher, proposed rule)
 - Stock: all named devices in stock
 - On the shelf · Guide catheters: 7F guide 3, 6F guide 3
 - On the shelf · Diagnostic catheters: 5F diagnostic catheters 6
@@ -59,18 +61,18 @@ Angio findings flagged: 0 of 4
 🚩 **FLAG:** stress positive · inferior wall
 🚩 **FLAG:** EF 35%
 **Labs**
-✅ none
+✅ none (from the packet values quoted)
 **Meds**
-✅ none
+✅ none (from the packet values quoted)
 **Equipment**
-✅ none
+✅ none (from the packet values quoted)
 
 ## Summary and approvals
 - Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 0 · Meds 0 · Equipment 0
 
-Contrast ratio: n/a (proposed cap 3.7; contrast mL ÷ eGFR)
+Contrast ratio: n/a (published cutoff 3.7, Laskey 2007; contrast mL ÷ eGFR)
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template a0c1d013d2 · thresholds 04864c04a6 · plan.py c9468ccb46 · day.md · packet id n/a_
+_Provenance: template a0c1d013d2 · thresholds 51ec501c23 · plan.py d0e4e2d2e3 · day.md · packet id n/a_
