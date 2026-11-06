@@ -28,6 +28,10 @@ def sweep(tok, ch, ids, since, seen):
             if m:
                 shutil.rmtree(os.path.join(OUT, f"case-{m.group(1)}"), ignore_errors=True); cleared += 1
                 open(os.path.join(OUT, f"packet-{m.group(1)}.json.tmp"), "w").write(json.dumps({"id": p["id"], "ts": p["create_at"] / 1000})); os.replace(os.path.join(OUT, f"packet-{m.group(1)}.json.tmp"), os.path.join(OUT, f"packet-{m.group(1)}.json"))
+            rl = records.chair_ruling(p)  # a ruling counts only as the chair's own post, never from the Clerk's echo
+            if rl:
+                cur = records.rulings(OUT)
+                if rl[2] >= cur.get(rl[0], {}).get("ts", 0): cur[rl[0]] = {"text": rl[1], "ts": rl[2]}; open(os.path.join(OUT, "rulings.json.tmp"), "w").write(json.dumps(cur)); os.replace(os.path.join(OUT, "rulings.json.tmp"), os.path.join(OUT, "rulings.json"))
             k = ASKS.match(p["message"].strip())
             if k and p["create_at"] / 1000 > time.time() - 120:  # live asks only, not a replay
                 pr = plan.check(k.group(1), os.path.join(OUT, f"case-{k.group(1)}")) if k.group(1) else board_final.problems(OUT)
@@ -41,9 +45,6 @@ def sweep(tok, ch, ids, since, seen):
                 have = {(a["id"], a["decision"]) for a in records.approvals(OUT)}  # one record per card state, so a later Decline or Closed edit is kept
                 if (n[1]["id"], n[1]["decision"]) not in have:
                     with open(os.path.join(OUT, "approvals.jsonl"), "a") as f: f.write(json.dumps(n[1]) + "\n")
-            elif n and n[0] == "ruling":
-                cur = records.rulings(OUT)
-                if n[1][2] >= cur.get(n[1][0], {}).get("ts", 0): cur[n[1][0]] = {"text": n[1][1], "ts": n[1][2]}; open(os.path.join(OUT, "rulings.json"), "w").write(json.dumps(cur))
             continue
         m = HEAD.match(p["message"])
         if m and ids.get(p["user_id"]) == m.group(1).lower():  # the brief's header must name the account that posted it

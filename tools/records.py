@@ -3,8 +3,8 @@ Read by plan.py and board_final.py so the signed PDFs carry a summary with the a
 import json, os, re, time
 DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "briefs")
 CARD = re.compile(r"^\*\*(Allow once|Allow for this session|Decline|Closed)\*\* · request `(A\d+)`\s*(?:\||\n)\s*([^\n|]*)", re.S)
-CHOSEN = re.compile(r"Chosen by @(\w+)")
-RULING = re.compile(r"^RULING RECEIVED: (Case ([1-9]) = .*)$")
+CHOSEN = re.compile(r"Chosen by @([\w.\-]+) from Mattermost")
+RULING = re.compile(r"^@clerk\s+(Case ([1-9]) = [^\n]*)")  # the chair's own post; the Clerk's echo is only an acknowledgement and is never a record
 
 def approvals(d=DIR):
     p = os.path.join(d, "approvals.jsonl")
@@ -21,12 +21,19 @@ def rulings(d=DIR):
 def when(ts): return time.strftime("%H:%M:%S", time.localtime(ts))
 
 def note(post):
-    """-> ('approval', record) | ('ruling', (case, text, ts)) | None for one Clerk post."""
+    """-> ('approval', record) for one Switch permission-card post by the Clerk account, else None.
+    Only a real Switch card counts: Switch tags its card posts with props.switch_publication, which a plain post made by the Clerk's room-post tool cannot carry, so card-shaped text written by the Clerk model is ignored.
+    The chair's name is the LAST 'Chosen by @name from Mattermost' (the command text above it is written by the model)."""
     msg = post["message"].strip(); m = CARD.match(msg)
-    if m:
-        who = CHOSEN.search(msg); return "approval", {"id": post["id"], "ts": max(post["create_at"], post.get("update_at", 0)) / 1000, "request": m.group(2), "decision": m.group(1), "what": m.group(3).strip(), "by": who.group(1) if who else "unknown"}
+    if not m or not (post.get("props") or {}).get("switch_publication"): return None
+    who = CHOSEN.findall(msg)
+    return "approval", {"id": post["id"], "ts": max(post["create_at"], post.get("update_at", 0)) / 1000, "request": m.group(2), "decision": m.group(1), "what": m.group(3).strip(), "by": who[-1] if who else "unknown"}
+
+def chair_ruling(post):
+    """-> (case, text, ts) for a ruling the CHAIR typed to the Clerk ('@clerk Case N = ...'), else None."""
     m = RULING.match(post["message"].strip())
-    if m: return "ruling", (m.group(2), m.group(1), post["create_at"] / 1000)
+    return (m.group(2), m.group(1), post["create_at"] / 1000) if m else None
+
 
 def chair(): return os.environ.get("MM_CHAIR_USER", "chargenurse")
 

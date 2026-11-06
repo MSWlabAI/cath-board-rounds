@@ -5,6 +5,7 @@ usage: plan.py CASE [--briefs FILE|-|DIR] [--out DIR] [--pdf] [--approved] [--fo
 With --briefs DIR (the Clerk's flow) it refuses stale or mixed-run briefs and a dead room recorder unless --force."""
 import glob, hashlib, html, json, os, re, subprocess, sys, time
 DASH32 = ' stroke-dasharray="3 2"'  # outside the f-string: Python < 3.12 forbids a backslash in an f-string expression
+SIGNED_AT = None  # set by main() to the chair's Allow time, so a stamp shows when the Allow was given, not when the command ran
 SIGN_WAIT_S = 10  # the recorder polls every 2 s; the Clerk can run this within 1 s of the click
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import records, angio, pk
@@ -213,7 +214,7 @@ def build(case, btext, approved=False, th=None):
     appr = [a for a in records.approvals(rec_dir) if re.search(rf"\bcase {case}\b", a["what"], re.I)]
     return dict(prov=provenance(case), warn=warn, prep=prep(ls, manifest_groups(f), lk, pre, th, pathway, stock(f), pt.group(2), stock_names(f), ef), pathway=pathway, stage=stage, pre=pre, lk=lk, groups=manifest_groups(f), ruling=ruling, appr=appr, case=case, pt=pt.group(1), time=pt.group(2), proc=pt.group(3), lesions=ls, triggers=tr, ratio=ratio, cap=cap, rules=rules, manifest=manifest(f),
                 flags=flags, notes=notes, needs=needs, s1=s1, s2=s2, staged=contrast_hit and bool(s1), devices=f.get("DEVICES", ""), missing=missing, approved=approved, th=th,
-                angio_missing=angio_missing, unreliable="unreliable" in labs, report=f.get("CATH REPORT", "not in packet"), stamp=time.strftime("%Y-%m-%d %H:%M"))
+                angio_missing=angio_missing, unreliable="unreliable" in labs, report=f.get("CATH REPORT", "not in packet"), stamp=time.strftime("%Y-%m-%d %H:%M", time.localtime(SIGNED_AT or time.time())))
 
 def md(p):
     L = [f"# CATH PLAN · Case {p['case']} · {'APPROVED' if p['approved'] else 'DRAFT'}", f"_{SIGNED if p['approved'] else DRAFT}_", "", f"**{p['pt']} · {p['time']} · {p['proc']}**", ""]
@@ -461,7 +462,8 @@ def selftest():
         import board_final as bf
         rows = ["| 07:30 | 2 | 74M | PCI | 09:30 | NO FLAGS RAISED | x |", "| 09:30 | 3 | 68M | PCI | 11:00 | ON HOLD | y |"]
         ru = {"2": {"text": "Case 2 = ON HOLD ; k ; operator to confirm", "ts": 1}, "3": {"text": "Case 3 = ON HOLD ; k", "ts": 1}}
-        h9 = len(bf.table_mismatch(rows, ru)) == 1 and not bf.table_mismatch(rows[1:], ru)
+        h9 = (len(bf.table_mismatch(rows, ru)) == 1 and not bf.table_mismatch(rows[1:], {"3": ru["3"]}) and any("no row" in x for x in bf.table_mismatch(rows[1:], ru))  # a ruled case with no row is refused
+              and any("malformed" in x for x in bf.table_mismatch(["| 07:30 | 2 | x |"], {})) and not bf.table_mismatch(["| 07:30 | Case 2 | 74M | PCI | 09:30 | ON HOLD | y |"], {"2": ru["2"]}))  # short rows are refused; 'Case 2' in the id cell is read as 2
         for name, cond in (("signing: the chair's own Allow once counts", h1), ("signing: an Allow chosen by anyone but the chair does not", h2), ("signing: Allow for this session does not", h3), ("signing: a card naming two cases signs neither", h4), ("signing: a plan card containing 'board' signs neither plan nor board", h5), ("signing: 'dashboard' is not the board", h6), ("signing: a later Closed edit of the card cancels the Allow", h7), ("signing: the board card signs the board", h8), ("board table must match the chair's recorded rulings", h9)): print("PASS" if cond else "FAIL", name); ok &= cond
         for name, cond in (("signing: Allow newer than briefs counts, older or other case does not", c1), ("signing: a later Decline cancels", c2), ("signing: later Allow after Decline counts, bad JSONL line tolerated", c3)): print("PASS" if cond else "FAIL", name); ok &= cond
     for bad in ("0", "10", "a", "1;rm"):
@@ -487,7 +489,11 @@ if __name__ == "__main__":
         if not os.path.isdir(arg("--briefs") or ""): print("PLAN INCOMPLETE: signing needs the recorder's briefs folder"); sys.exit(3)
         if os.path.realpath(arg("--briefs")) != os.path.realpath(os.path.join(rd, f"case-{a[0]}")): print(f"PLAN INCOMPLETE: signing Case {a[0]} needs the recorder's briefs/case-{a[0]} folder, not {arg('--briefs')}"); sys.exit(3)
         after = max(getattr(read_dir, "newest", 0), records.rulings(rd).get(a[0], {}).get("ts", 0))  # an Allow must be newer than the briefs AND than the chair's latest ruling for this case
-        if not records.signed(rd, records.plan_pattern(a[0]), after, wait=SIGN_WAIT_S):
+        os.environ.pop("RECORDS_DIR", None)  # a stamped plan must show the records that authorised it
+        if os.path.basename(os.path.realpath(arg("--out", os.path.join(ROOT, "plans")))) != "plans": print("PLAN INCOMPLETE: a signed plan is written only to a folder named plans"); sys.exit(3)
+        rec = records.signed(rd, records.plan_pattern(a[0]), after, wait=SIGN_WAIT_S)
+        if rec: globals()["SIGNED_AT"] = rec["ts"]
+        if not rec:
             last = (records.approvals(rd) or [{}])[-1]; print(f"PLAN INCOMPLETE: no Allow once recorded for this plan after its newest brief (last card: {last.get('decision', 'none')} {last.get('what', '')[:50]}); not signing"); sys.exit(3)
     p, files, err = write(a[0], bt, arg("--out", os.path.join(ROOT, "plans")), "--pdf" in a, "--approved" in a)
     print("\n".join(files))

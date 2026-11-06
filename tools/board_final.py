@@ -13,13 +13,16 @@ def ruling_text(ru, c):
 
 LABELS = ("NO FLAGS RAISED", "REVIEWED WITH NOTES", "ON HOLD")
 def table_mismatch(rows, ru):
-    """Rows whose Ruling cell does not start with the label the chair recorded for that case (a signed board must not contradict its own rulings)."""
-    out = []
+    """Why a board table cannot be signed against the chair's recorded rulings: a ruled case with no row or no ruling cell label, a malformed row, or a cell that does not start with the recorded label."""
+    out = []; seen = set()
     for r in rows:
         c = [x.strip() for x in r.strip().strip("|").split("|")]
-        if len(c) < 6 or c[1] not in ru: continue
-        want = next((l for l in LABELS if re.search(r"=\s*" + l, ru[c[1]]["text"])), None)
-        if want and not c[5].upper().startswith(want): out.append(f"Case {c[1]}: table says '{c[5][:30]}', chair ruled {want}")
+        if len(c) < 6: out.append(f"malformed row '{r[:30]}'"); continue
+        m = re.search(r"[1-9]", c[1]); cs = m.group(0) if m else c[1]; seen.add(cs)
+        if cs not in ru: continue
+        want = next((l for l in LABELS if re.search(r"=\s*" + l, ru[cs]["text"])), None)
+        if want and not c[5].upper().startswith(want): out.append(f"Case {cs}: table says '{c[5][:30]}', chair ruled {want}")
+    out += [f"Case {k} was ruled but has no row" for k in sorted(set(ru) - seen)]
     return out
 
 def summary(rows, d, approved=False, rec=None):
@@ -46,7 +49,12 @@ def problems(d, now=None):
 
 def main(a):
     arg = lambda k, d=None: a[a.index(k) + 1] if k in a else d
-    d = os.path.abspath(arg("--briefs", os.path.join(ROOT, "briefs"))); out = os.path.abspath(arg("--out", ".")); src = os.path.join(d, "board-draft.md"); hb = os.path.join(d, "_heartbeat"); now = time.time()
+    d = os.path.abspath(arg("--briefs", os.path.join(ROOT, "briefs"))); out = os.path.abspath(arg("--out", "."))
+    if "--approved" in a:  # a signature is spent only on the recorder's own folder, written to the working folder
+        os.environ.pop("RECORDS_DIR", None); d = os.path.realpath(os.path.join(ROOT, "briefs")); out = os.path.realpath(os.getcwd())
+        if arg("--briefs") and os.path.realpath(arg("--briefs")) != d: print("BOARD INCOMPLETE: signing uses the recorder's briefs folder only"); return 3
+        if arg("--out") and os.path.realpath(arg("--out")) != out: print("BOARD INCOMPLETE: a signed board is written to the working folder only"); return 3
+    src = os.path.join(d, "board-draft.md"); hb = os.path.join(d, "_heartbeat"); now = time.time()
     if not os.path.exists(src): print("BOARD INCOMPLETE: no board draft recorded; ask the Clerk for a Board draft first"); return 3
     if now - os.path.getmtime(src) > MAX_AGE_MIN * 60: print(f"BOARD INCOMPLETE: the board draft is older than {MAX_AGE_MIN} min; ask for a new Board draft"); return 3
     if not os.path.exists(hb) or now - os.path.getmtime(hb) > HEARTBEAT_S: print("BOARD INCOMPLETE: the room recorder is not running, so the draft may be stale"); return 3
