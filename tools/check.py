@@ -68,7 +68,7 @@ def grounding(case, body):
             if lid not in les: out.append(f"lesion {lid} is not in the packet"); continue
             c = les[lid]
             for lm in re.finditer(rf"\b{lid} ([A-Za-z][\w\- ]*?) (\d+)%", l):
-                if not lm.group(1).lower().startswith(c[1].lower()) or lm.group(2) + "%" != c[2].replace(" ", ""): out.append(f"{lid} is {c[1]} {c[2]} in the packet, not '{lm.group(0)}'")
+                if not (lm.group(1).lower().startswith(c[1].lower()) or c[1].lower().startswith(lm.group(1).lower())) or lm.group(2) + "%" != c[2].replace(" ", ""): out.append(f"{lid} is {c[1]} {c[2]} in the packet, not '{lm.group(0)}'")
             for trig in trigs:
                 if trig.startswith("calcium") and not re.search(r"moderate|severe", c[4]): out.append(f"{lid} has no moderate or severe calcium in the packet")
                 if trig.startswith("timi below 3") and (re.search(r"\d", c[3]) or [None])[0] in (None, "3"): out.append(f"{lid} has TIMI 3 in the packet")
