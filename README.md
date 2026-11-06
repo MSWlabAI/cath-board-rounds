@@ -40,7 +40,7 @@ Switch delivers the handoff post and enforces who may address whom; what the age
 | Pathway | Example | What the plan does |
 |---|---|---|
 | Known intervention (the cath is expected to be positive) | Cases 1 to 3 and 5 | Lesion map and a synthetic angiographic figure, rules that fired, equipment manifest, prep check |
-| Indeterminate (positive CCTA or stress, may stay diagnostic) | Case 4 and the scenario library | A likelihood **band** from a proposed points rule (CCTA lesion, stress result, whether the stress territory matches the lesion, EF, symptoms), never a probability; equipment staged for both branches |
+| Indeterminate (positive CCTA or stress, may stay diagnostic) | Case 4 and the scenario library | A points **band** from a proposed points rule (CCTA lesion, stress result, whether the stress territory matches the lesion, EF, symptoms), never a probability; equipment staged for both branches |
 | Prep for the likely PCI | every case | Stock against the packet, then questions for the chair: stents against lesions, calcium with no modification or imaging device, left main, support devices when the EF is low, an out-of-stock device arriving after the scheduled start |
 
 The agents still only flag. The plan asks questions and never chooses a device. `scenarios.md` holds seven synthetic indeterminate patients across different vessels and territories
@@ -49,14 +49,14 @@ The agents still only flag. The plan asks questions and never chooses a device. 
 
 ![Pre-cath plan, page 1](examples/plan-preview.png)
 
-*A pre-cath plan for an indeterminate patient: the likelihood band with every driver, the shelf by class, and questions for the chair (sample, synthetic). `examples/` also holds a known-intervention plan with the angiographic figure, and a signed board.*
+*A pre-cath plan for an indeterminate patient: the points band with every driver, the shelf by class, and questions for the chair (sample, synthetic). `examples/` also holds a known-intervention plan with the angiographic figure, and a signed board.*
 
 ## Try it without Switch (about a minute)
 
 ```
 ./check.sh --selftest                     # scorer self-test: planted flags, false and extra flags, scope words, handoff line, short cards
 python3 tools/plan.py --selftest          # plan assembler self-test
-python3 tools/scenarios_test.py           # likelihood, staging and prep questions across the 7 indeterminate scenarios
+python3 tools/scenarios_test.py           # points band, staging and prep questions across the 7 indeterminate scenarios
 python3 tools/plan.py 2 --briefs examples/briefs-case-2.md --out /tmp/plan --pdf     # needs Google Chrome; writes /tmp/plan/plan-case-2.pdf
 python3 tools/board_pdf.py examples/board-sample.md /tmp/board.pdf --approved       # the signed-board PDF
 ```
@@ -84,7 +84,7 @@ Filmed build: all five agents on Claude Code. The earlier recorded rows (hash `8
 | Actor | What it is | Provider |
 |---|---|---|
 | Chair (`chargenurse`) | the human; the only one who rules and the only one who can approve a card | Mattermost user |
-| Imaging | lesion map and angio triggers (calcium, bifurcation or ostial, TIMI below 3, multivessel) | Cursor CLI for every recorded run (default model, Grok on the author's machine); Claude Code in the filmed build (see Disclosures). `template.yaml` carries a one-line `provider:` switch |
+| Imaging | lesion map and angio triggers (calcium, bifurcation or ostial, TIMI below 3, lesions in more than one coronary territory) | Cursor CLI for every recorded run (default model, Grok on the author's machine); Claude Code in the filmed build (see Disclosures). `template.yaml` carries a one-line `provider:` switch |
 | Labs | kidney function and labs against the contrast plan | Claude Code |
 | Meds | antiplatelets, anticoagulation, holds | Claude Code |
 | Equipment | devices against stock | Claude Code |
@@ -180,7 +180,8 @@ The author's preflight (`prep_check.sh`) lives outside this repo; `RUNBOOK.md` l
 - Signing needs a recorded Allow once on a real Switch permission card (the recorder counts only posts Switch tagged as cards, never card-shaped text the Clerk writes), chosen by the chair, decided after the newest brief and the chair's latest ruling; `plan.py` and `board_final.py` refuse otherwise. The request is still matched by the card's description text, which the Clerk model writes. The stamp is a record check, not a cryptographic signature: the Clerk runs as the same OS user as the author, so this shows the workflow and is not a tamper-proof control.
 - Whether Switch restricts which agents can address the Clerk beyond `owner-agents` is not verified here.
 - A new room's agents can start without reading the room (a Meds reset fixes it); `RUNBOOK.md` has the check.
-- The likelihood weights, prep rules and Imaging triggers are the author's proposals, not derived from data and not clinician-reviewed.
+- The points weights, prep rules and Imaging triggers are the author's proposals, not derived from data and not clinician-reviewed.
+- The reference tags, the contrast-ratio basis and the multivessel definition were re-checked against guideline sources on 2026-11-06 (`docs/EVIDENCE.md`: primary text read for the 2024 ESC chronic coronary syndromes guideline and the 2021 EHRA NOAC guide; CAD-RADS, ACR, Gurm and Laskey from secondary summaries). The plan now shows a Cockcroft-Gault contrast ratio beside the eGFR one, and Imaging calls lesions multivessel only across coronary territories. `verified` in `thresholds.json` stays false: a chair has not signed these values off.
 
 ## Disclosures
 

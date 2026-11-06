@@ -50,8 +50,8 @@ Angio findings flagged: 1 of 4 (TIMI flow below 3)
 - Ruling recorded: none yet
 - Flags: Imaging 1 · Labs 1 · Meds 2 · Equipment 0
 
-Contrast ratio: 1.3 (Laskey 2007 discriminator 3.7, not a limit; contrast mL ÷ eGFR)
+Contrast ratio: 1.3 (Laskey 2007 discriminator 3.7, not a limit; contrast mL ÷ eGFR) · by Cockcroft-Gault creatinine clearance (61 mL/min): 1.7
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template 6fbf68f001 · thresholds 51ec501c23 · plan.py 4b8c7ba9c3 · day2.md · packet id n/a_
+_Provenance: template 7b83bc09dd · thresholds bea3b78f4a · plan.py fa5860885c · day2.md · packet id n/a_

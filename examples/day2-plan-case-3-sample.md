@@ -11,8 +11,8 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 - Symptoms: typical angina
 - CCTA L1 mid-LAD 75% · calcium none
 - CCTA L2 prox-LCx 55% · calcium moderate
-- Likelihood band (proposed points rule): higher (9 points; not a probability)
-  - CCTA 75%, severe stenosis, CAD-RADS 4A/4B range (L1 mid-LAD; E5) (+2)
+- Points band (proposed points rule): higher (9 points; not a probability)
+  - CCTA 75%, stenosis of 70% or more (the CAD-RADS 4A/4B/5 range; CAD-RADS categories are per patient) (L1 mid-LAD; E5) (+2)
   - CCTA 55%, intermediate stenosis (L2 prox-LCx; E6) (+1)
   - two or more CCTA lesions (+1)
   - stress test positive (stress echo, anterior wall) (+2)
@@ -27,7 +27,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 Angio findings flagged: 0 of 4
 
 ## Rules that fired
-- Likelihood band (proposed rule, 9 points): higher. A label from a points rule, not a probability. Chair to decide; the packet lists equipment for both branches below.
+- Points band (proposed rule, 9 points): higher. The band word only labels a points range; it is not a probability and not a clinical pre-test probability. Chair to decide; the packet lists equipment for both branches below.
 
 ## Equipment manifest
 **Branch A · stays diagnostic**
@@ -77,4 +77,4 @@ Contrast ratio: n/a (Laskey 2007 discriminator 3.7, not a limit; contrast mL ÷ 
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template 6fbf68f001 · thresholds 51ec501c23 · plan.py 4b8c7ba9c3 · day2.md · packet id n/a_
+_Provenance: template 7b83bc09dd · thresholds bea3b78f4a · plan.py fa5860885c · day2.md · packet id n/a_

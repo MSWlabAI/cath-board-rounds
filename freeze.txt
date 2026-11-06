@@ -1,14 +1,14 @@
 # freeze.txt: sha256 of the files and prompts that define the streak. Regenerate with tools/freeze.py; a diff means the streak restarts.
 
-6fbf68f00136f20ef85be0bab2e2ce89f8425c1d725ed0f56e9feb7aa0059405  template.yaml
+7b83bc09dd4357639f7999db2233bb8f538b444596adc0e377b8879cba93d30c  template.yaml
 fd5dd69fe61a9ab4d856ecd19ec3f65bbd7eeba70593350087e704b1ff80223d  day.md
 792afa193c4a8c783b5e33f7d7bface97fc754bd9452d34e4b1974b8f7df5baf  day2.md
 389b5aa117ede6475d7743b6d442b4ee0bd427574f3b0253266b52bf121d34cf  day3.md
 2b1e7a2a673bf0c90be2d10e9e37d10b7c3d53a0a86bf70950057cb24034ea44  expected.json
-c55d0b5abeb99d92e8c5c33ce8cc721ac2d38098f30c722434d02fea2dc31951  expected2.json
+2e665276564b6cd5b2420bbc21e70727a3d4efe6c010e31ef61c8b610fb86415  expected2.json
 f7a2518c77aa987ad2bb2cfec5988a4131a5e0c277d358ff13cd239d152408a7  expected3.json
-881b322ebd941b3629afa21362a094cae102c636d35a899cf39c9cb98cce9f80  scenarios-expected.json
-51ec501c230a4ae8004b5fea135b9d0777dbd3d935efab50f599d51ba69237de  thresholds.json
+c9fb5f058792c6a39f949ca3520bd7086dbf01c5a95464a9b09b460276df87be  scenarios-expected.json
+bea3b78f4a3cc608a3176b722453474e7fc6b31c8cb2a7a3add08083f09ed99b  thresholds.json
 74f38572a96ea7e88cdc3c74f1326d094774d0f5d7c76d40f797e767ccd3b4c8  case
 4a3f9f3ee558474414c822433474a8db3989b7f943324f7be0bfb252643c1765  check.sh
 891dfb54ca605f7172ac1c1ab01c3c4483605cb08f2ed22fecf74fdb31a26394  tools/after_rebuild.sh
@@ -16,10 +16,10 @@ f8a70854a3fcc6f814196db73f94dce376128af218535ee5490dcf6d495dbd0e  tools/hooks/pr
 adf01ee01a08b6ff141954e1ea5e8d31a51cd2538cf81bf6edb2556c10412eff  tools/angio.py
 cf3a76267addb5d3c4c3780ae3bcfa8fd88995e194ff0c1680b502d05b2fd474  tools/ask.py
 62200cebe619be8daef1523900d8bc42f615661030ff08131de4a11b2990e14c  tools/board.py
-737b5beb2e5d34ec3862453ed76ff327854fd2699c06c8958a69012bb75518c9  tools/board_final.py
+34f32bb4a58e6f56206d7ccbc010e0f5ee6e3c41aa9d96a95f23b8c486dd9904  tools/board_final.py
 ecc5a3c5f58aa8e0d8ae7a725ed8bc2560ca8d4eb2820e8367c56452e51e09de  tools/board_pdf.py
 d24ea8234bfb5216e9ddd18de0abbfd16f13b37d95bca157edd01b0f682da9a7  tools/callback_forward.py
-3e72843f5d0ff23bab2ea7e755b6a8770383d0cdcae62d7ec86758ea5da2763a  tools/check.py
+d13cc33185b150e30f270eb13a752420982e3b82675babff017883a9cdbcaab1  tools/check.py
 fa8f586462855ed7b79ff6da541a3f9d68d00a2409feac0e00d41aa6427a9eb1  tools/clerk.py
 7d4553bda09c9ec54648ccb5db4971870aa856fe6a0cdc0a44c0af26b503fee2  tools/dryrun.py
 89f8fc5801be5327c3e67b72df3a9d92d7d4f377fa46fb31fe73bf0f64b4c2b7  tools/freeze.py
@@ -29,8 +29,8 @@ dda0440b673daa422a1fedd2dd2f1cd71d3f424221fffdf0890f6ea25f5d143a  tools/localche
 fbf93bbaab0228095825533a85b3e46b5a2a9e3376b90e6d9e2d692e58aaa77f  tools/mm.py
 5d6986be0727f5d4e75e9a2cf60463d1245234c0575c6dc72bd86455c4cc6fcb  tools/packet.py
 62f9869dadecee9502bd9d78b323bcda3743fb00c6d0bbee9b9daa2f5ebb4e3f  tools/pin_intro.py
-d21e9d286bae625b3003f271be9ec4e640294c02efbdacdaa36644ae73cdf03e  tools/pk.py
-4b8c7ba9c30c5503a02c30cb01834acf923f656d54073439ba16a16e8f07bdba  tools/plan.py
+7c51893f4a39dee532025d672d9c479d44c3de3ef01f3f39fd42ddcdc9f32c6d  tools/pk.py
+fa5860885c4af1359ef8d45af894ef53cb4b259ddf03c9c434bd2db06ae32d96  tools/plan.py
 a6dc758086ba2a7a56369536ca9975607292882e566b23f25b18541e670a1b0f  tools/recorder.py
 2b079200729685538840c11e23bfb92bed9dd5a74fff8ea2b4a12ebb61d6d505  tools/records.py
 ccc504e614329e63f33e39efa0c42a1c5f93e821d9a369c13a4177a6f542ee9a  tools/render_all.py
@@ -41,9 +41,9 @@ e19b5b68875cd07f862b86893d96683b490ff161fecd7d0ee2fad9c46359d569  tools/rescore.
 
 # agent prompts (from template.yaml)
 8b6bc2291d903314  labs       claude  3845 chars
-82011d8cfa96efdd  meds       claude  3736 chars
+afe2a7fc0b763eda  meds       claude  4016 chars
 ff770d86bddd3fdc  equipment  claude  3582 chars
-7aecd2b38b2d42af  imaging    claude  5070 chars
+334f59d381bc2bc8  imaging    claude  5433 chars
 e8fbeb0e79860acc  clerk      claude  5059 chars
 
 # tools

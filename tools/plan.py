@@ -73,7 +73,7 @@ def triggers(ls):
     if any(pk.calc(l["calcium"]) for l in ls): t.append("calcium moderate or severe")
     if any(pk.has_flag(l["flag"]) or pk.is_lm(l["vessel"]) for l in ls): t.append("bifurcation, ostial or left main")
     if any((pk.timi(l["timi"]) if pk.timi(l["timi"]) is not None else 3) < 3 for l in ls): t.append("TIMI flow below 3")
-    if len(ls) > 1: t.append("more than one lesion (multivessel)")
+    if len(pk.territories(ls)) > 1: t.append("lesions in more than one coronary territory (multivessel)")
     return t
 
 def stock(f):
@@ -108,7 +108,7 @@ def likelihood(pre, th):
     P = L["points"]; drivers = []
     for l in pre["cta"]:
         n = pk.pct(l["pct"]) or 0; lm = pk.is_lm(l["vessel"])
-        if n >= L.get("ccta_obstructive_percent", 70) or (lm and n >= L.get("ccta_left_main_percent", 50)): drivers.append((f"CCTA {l['pct']}, " + ("severe stenosis, CAD-RADS 4A/4B range" if n >= L.get("ccta_obstructive_percent", 70) else "left main 50% or more, CAD-RADS 4B by location") + f" ({l['id']} {l['vessel']}; E5)", P["ccta_obstructive"]))
+        if n >= L.get("ccta_obstructive_percent", 70) or (lm and n >= L.get("ccta_left_main_percent", 50)): drivers.append((f"CCTA {l['pct']}, " + ("stenosis of 70% or more (the CAD-RADS 4A/4B/5 range; CAD-RADS categories are per patient)" if n >= L.get("ccta_obstructive_percent", 70) else "left main 50% or more (the CAD-RADS 4B left main criterion)") + f" ({l['id']} {l['vessel']}; E5)", P["ccta_obstructive"]))
         elif n >= L.get("ccta_intermediate_percent", 50): drivers.append((f"CCTA {l['pct']}, intermediate stenosis ({l['id']} {l['vessel']}; E6)", P["ccta_intermediate"]))
     if len(pre["cta"]) >= 2: drivers.append(("two or more CCTA lesions", P["ccta_two_or_more_lesions"]))
     if pre["stress"] == "positive": drivers.append((f"stress test positive ({stress_detail(pre)})", P["stress_positive"]))
@@ -136,7 +136,7 @@ def manifest_groups(f):
         if key not in f: continue
         rows = []
         for d in [x.strip() for x in re.split(r"[,;]", f[key]) if x.strip()]:
-            hit = next((k for k in st if k == d.lower() or d.lower().startswith(k) or k.startswith(d.lower())), None); n, note = st[hit] if hit else (None, "")
+            hit = next((k for k in st if k == d.lower()), None) or next((k for k in st if d.lower().startswith(k + " ") or k.startswith(d.lower() + " ")), None); n, note = st[hit] if hit else (None, "")
             rows.append((d, "not in STOCK line" if n is None else ("OUT: 0 on hand" + (f" · {note}" if note else "") if n == 0 else f"{n} on hand")))
         groups.append((label, rows))
     return groups
@@ -160,7 +160,7 @@ def prep(ls, groups, lk, pre, th, pathway, stock_all=None, case_time="99:99", na
     sef = P.get("support_question_ef_percent"); ef_val = ef if ef is not None else (pre["ef"] if pre else None)
     if ef_val is not None and sef is not None and ef_val <= sef:
         sup = [f"{names.get(k, k)} {n}" for k, (n, _) in (stock_all or {}).items() if any(w in k for w in ("impella", "iabp"))]
-        qs.append(f"EF {ef_val}% in the packet. The 2015 SCAI/ACC consensus names high-risk PCI (multivessel, left main, last conduit) with severely reduced EF but gives no EF cutoff (E10). Support devices on the shelf: {', '.join(sup) or 'none in the stock list'}. Chair to decide whether support is needed.")
+        qs.append(f"EF {ef_val}% in the packet. The 2015 SCAI/ACC consensus names high-risk PCI (multivessel, left main, last conduit) with severely reduced EF but gives no EF cutoff (E10); this question fires at EF {sef}% or lower, the author's heuristic. The packet names no support device; the stock list shows: {', '.join(sup) or 'none'}. Whether support is needed is the chair's decision.")
     if pathway == "indeterminate" and lk:
         both = ["lower", "intermediate", "higher"].index(lk["band"]) >= ["lower", "intermediate", "higher"].index(P.get("stage_both_branches_from_band", "intermediate"))
         scope = "The packet lists Branch A and Branch B (band " + lk["band"] + ", proposed rule)" if both else "The packet lists Branch A and names what Branch B would need (band " + lk["band"] + ", proposed rule; a label, not a statement that PCI is unlikely)"
@@ -173,6 +173,9 @@ def prep(ls, groups, lk, pre, th, pathway, stock_all=None, case_time="99:99", na
         eta = re.search(r"ETA (\d\d:\d\d)", note or "")
         if n == 0 and eta and any(w in k for w in ("ivus", "oct")) and eta.group(1) > case_time and any(pk.calc(l["calcium"]) or pk.is_lm(l["vessel"]) for l in findings):
             qs.append(f"Calcium or left main on {src}, and {names.get(k, k)} is 0 on hand with resupply ETA {eta.group(1)}, after the scheduled {case_time} start: chair to decide how to proceed.")
+    for d, s_ in allrows:  # a device the packet names that is out of stock, with resupply after the scheduled start
+        eta = re.search(r"ETA (\d\d:\d\d)", s_ or "")
+        if s_.startswith("OUT") and eta and eta.group(1) > case_time and not any(d.lower() in q.lower() and "resupply ETA" in q for q in qs): qs.append(f"{d} is 0 on hand with resupply ETA {eta.group(1)}, after the scheduled {case_time} start: chair to decide how to proceed.")
     return dict(shelf=shelf, scope=scope, out=out, questions=qs, status=("OUT: " + ", ".join(out)) if out else "all named devices in stock")
 
 def briefs(text):
@@ -191,20 +194,28 @@ def build(case, btext, approved=False, th=None):
     if "contrast" in f.get("PLAN", "").lower() and ratio is None: warn.append("contrast and eGFR were not both read, so the contrast ratio rule did NOT run")
     if egfr and egfr.group(1): warn.append(f"eGFR is given as '{egfr.group(1)}{egfr.group(2)}': the ratio uses {egfr.group(2)}, a bound, not a measurement")
     angio_missing = pathway != "indeterminate" and ((not ls) or "MISSING: ANGIO" in b.get("imaging", ""))
+    # The published cutoffs (Gurm 2011, Laskey 2007) were derived on Cockcroft-Gault creatinine clearance, so it is computed from the packet when age, sex, weight and creatinine are all there and shown beside the eGFR ratio; the rule uses the higher of the two
+    hs = re.search(r"(\d+)\s*([MF])\b", f["_head"]); wk = re.search(r"(\d+(?:\.\d+)?)\s*kg", f["_head"]); crm = re.search(r"\bCr\s*[:=]?\s*(\d+(?:\.\d+)?)", labs)
+    crcl = (140 - int(hs.group(1))) * float(wk.group(1)) / (72 * float(crm.group(1))) * (0.85 if hs.group(2) == "F" else 1) if hs and wk and crm and float(crm.group(1)) > 0 else None
+    cg_ratio_raw = int(cm.group(1)) / crcl if crcl and cm and crcl > 0 else None; cg_ratio = round(cg_ratio_raw, 1) if cg_ratio_raw is not None else None
+    tops = [r for r in (ratio, cg_ratio) if r is not None]; top = max(tops) if tops else None
+    if cm and cg_ratio is None: warn.append("Cockcroft-Gault creatinine clearance was not computed (age, sex, weight and creatinine are not all in the packet), so only the eGFR ratio is shown")
+    both = (f"{ratio} by eGFR ({cm.group(1)} mL ÷ eGFR {egfr.group(2)})" if ratio is not None else "no eGFR ratio") + (f"; {cg_ratio} by Cockcroft-Gault creatinine clearance ({cm.group(1)} mL ÷ {crcl:.0f} mL/min, actual weight)" if cg_ratio is not None else "")
     cap = th.get("contrast_ratio_cap"); rules = []; contrast_hit = False
-    if ratio is not None and cap is None: rules.append(f"Contrast ratio {ratio}: cap NOT SET, chair to supply.")
-    elif ratio is not None and ratio >= cap:
-        contrast_hit = True; rules.append(f"Contrast ratio above the Laskey 2007 discriminator and above 3: {ratio} ({cm.group(1)} mL ÷ eGFR {egfr.group(2)}) is above {cap}, a cutoff that discriminated early creatinine rise in Laskey 2007 (E2), and above 3, where risk was clearest in Gurm 2011 (E1). Observational cutoffs, not a limit; both used creatinine clearance, not eGFR. Chair to decide whether to stage.")
-    elif ratio is not None and ratio >= 3:
-        rules.append(f"Contrast ratio {ratio} is at or above 3, where risk was clearest in the Gurm 2011 registry (E1; creatinine clearance, not eGFR), and below {cap} (Laskey 2007, E2). Chair to decide.")
-    elif ratio is not None and th.get("contrast_ratio_watch") is not None and ratio >= th["contrast_ratio_watch"]:
-        rules.append(f"Contrast ratio {ratio} is at or above {th['contrast_ratio_watch']}, where risk began to rise in the Gurm 2011 registry (E1; creatinine clearance, not eGFR). Chair to decide.")
+    if top is not None and cap is None: rules.append(f"Contrast ratio {both}: cap NOT SET, chair to supply.")
+    elif top is not None and top >= cap:
+        contrast_hit = True; rules.append(f"Contrast ratio at or above the Laskey 2007 discriminator ({cap}) and above 3: {both}. {cap} discriminated early creatinine rise in Laskey 2007 (E2) and risk was clearest above 3 in Gurm 2011 (E1). Observational cutoffs on creatinine clearance, not limits; the higher of the two ratios is used. Chair to decide whether to stage.")
+    elif top is not None and top >= 3:
+        rules.append(f"Contrast ratio is at or above 3, where risk was clearest in the Gurm 2011 registry (E1, creatinine clearance), and below {cap} (Laskey 2007, E2): {both}. Chair to decide.")
+    elif top is not None and th.get("contrast_ratio_watch") is not None and top >= th["contrast_ratio_watch"]:
+        rules.append(f"Contrast ratio is at or above {th['contrast_ratio_watch']}, where risk began to rise in the Gurm 2011 registry (E1, creatinine clearance): {both}. Chair to decide.")
+    if "KDIGO" in b.get("labs", "") and not ("unreliable" in labs): warn.append("The Labs brief flags a creatinine rise (KDIGO): eGFR and creatinine clearance assume a steady state, so both ratios may be wrong while creatinine is changing")
     ht = th.get("heart_team", {}); ef = pre["ef"] if pre and pre["ef"] is not None else pk.ef(f.get("HISTORY", ""))
     fam = pk.family
     factors = []
     if any(pk.is_lm(l["vessel"]) and (pk.pct(l["pct"]) or 0) >= ht.get("left_main_percent", 50) for l in ls): factors.append("left main disease")
     if len({fam(l["vessel"]) for l in ls if (pk.pct(l["pct"]) or 0) >= 70 and fam(l["vessel"]) in ("lad", "lcx", "rca")}) >= 2 and ef is not None and ef <= ht.get("low_ef_percent", 35): factors.append(f"multivessel disease with EF {ef}%")
-    if lk: rules.append(f"Likelihood band (proposed rule, {lk['score']} points): {lk['band']}. A label from a points rule, not a probability. Chair to decide; the packet lists equipment for both branches below.")
+    if lk: rules.append(f"Points band (proposed rule, {lk['score']} points): {lk['band']}. The band word only labels a points range; it is not a probability and not a clinical pre-test probability. Chair to decide; the packet lists equipment for both branches below.")
     if angio_missing: rules.append("Angio data missing: complexity and staging were not assessed. Nothing here is a clearance.")
     elif stage == "pre-cath": pass
     elif factors: rules.append(f"Heart Team factors present (2021 ACC/AHA/SCAI; E7, E8): {'; '.join(factors)}. SYNTAX score is not computed here. These are packet factors; the chair decides what follows.")
@@ -218,7 +229,7 @@ def build(case, btext, approved=False, th=None):
     s1 = [l for l in ls if (pk.family(l["vessel"]) in named if named else l["vessel"].lower() in pt.group(3).lower())]; s2 = [l for l in ls if l not in s1]
     rec_dir = os.environ.get("RECORDS_DIR") or os.path.join(ROOT, "briefs"); ruling = records.rulings(rec_dir).get(str(case), {}).get("text")
     appr = [a for a in records.approvals(rec_dir) if re.search(rf"\bcase {case}\b", a["what"], re.I)]
-    return dict(prov=provenance(case), warn=warn, prep=prep(ls, manifest_groups(f), lk, pre, th, pathway, stock(f), pt.group(2), stock_names(f), ef), pathway=pathway, stage=stage, pre=pre, lk=lk, groups=manifest_groups(f), ruling=ruling, appr=appr, case=case, pt=pt.group(1), time=pt.group(2), proc=pt.group(3), lesions=ls, triggers=tr, ratio=ratio, cap=cap, rules=rules, manifest=manifest(f),
+    return dict(prov=provenance(case), warn=warn, prep=prep(ls, manifest_groups(f), lk, pre, th, pathway, stock(f), pt.group(2), stock_names(f), ef), pathway=pathway, stage=stage, pre=pre, lk=lk, groups=manifest_groups(f), ruling=ruling, appr=appr, case=case, pt=pt.group(1), time=pt.group(2), proc=pt.group(3), lesions=ls, triggers=tr, ratio=ratio, cg_ratio=cg_ratio, crcl=crcl, both=both, cap=cap, rules=rules, manifest=manifest(f),
                 flags=flags, notes=notes, needs=needs, s1=s1, s2=s2, staged=contrast_hit and bool(s1), devices=f.get("DEVICES", ""), missing=missing, approved=approved, th=th,
                 angio_missing=angio_missing, unreliable="unreliable" in labs, report=f.get("CATH REPORT", "not in packet"), stamp=time.strftime("%Y-%m-%d %H:%M", time.localtime(SIGNED_AT or time.time())))
 
@@ -230,13 +241,13 @@ def md(p):
     if p["angio_missing"]: L += ["> ANGIO DATA MISSING: complexity and staging were not assessed.", ""]
     if p["pre"]:
         L += ["## Pre-cath findings (indeterminate pathway)", f"- Stress: {p['pre']['stress_text'] or 'n/a'}", f"- EF: {str(p['pre']['ef']) + '%' if p['pre']['ef'] is not None else 'n/a'}", f"- Symptoms: {p['pre']['symptoms_text'] or 'n/a'}"] + [f"- CCTA {c['id']} {c['vessel']} {c['pct']} · {c['calcium']}" for c in p["pre"]["cta"]]
-        if p["lk"]: L += [f"- Likelihood band (proposed points rule): {p['lk']['band']} ({p['lk']['score']} points; not a probability)"] + [f"  - {d} (+{pt})" for d, pt in p["lk"]["drivers"]]
+        if p["lk"]: L += [f"- Points band (proposed points rule): {p['lk']['band']} ({p['lk']['score']} points; not a probability)"] + [f"  - {d} (+{pt})" for d, pt in p["lk"]["drivers"]]
         L += [""]
     L += ["## Lesion map", "| Lesion | Vessel | Stenosis | TIMI | Calcium | Flag |", "|---|---|---|---|---|---|"] + ([f"| {l['id']} | {l['vessel']} | {l['pct']} | {l['timi']} | {l['calcium']} | {l['flag']} |" for l in p["lesions"]] or ["| none in the packet | | | | | |"])
     L += ["", "Angio findings flagged: " + ("not assessed" if p["angio_missing"] else f"{len(p['triggers'])} of 4" + (" (" + "; ".join(p["triggers"]) + ")" if p["triggers"] else "")), "", "## Rules that fired"] + [f"- {r}" for r in p["rules"]]
     if p["staged"]:
-        L += ["", "## If the chair stages (illustration from the packet, not a recommendation)", f"- Stage 1: {', '.join(l['id'] + ' ' + l['vessel'] for l in p['s1'])} (the procedure named in the packet)",
-              f"- Stage 2: {', '.join(l['id'] + ' ' + l['vessel'] for l in p['s2']) or 'none'}: devices not listed in the packet, Equipment to confirm"]
+        L += ["", "## Lesions in the packet's procedure line, and the others listed (a split of the packet text only; whether to stage is the chair's decision)", f"- In the procedure line: {', '.join(l['id'] + ' ' + l['vessel'] for l in p['s1'])} (as named in the packet)",
+              f"- Other listed lesions: {', '.join(l['id'] + ' ' + l['vessel'] for l in p['s2']) or 'none'}: devices not listed in the packet, Equipment to confirm"]
     L += ["", "## Equipment manifest"]
     for label, rows in p["groups"]: L += ([f"**{label}**"] if label else []) + ["| Item | Stock |", "|---|---|"] + [f"| {a} | {b} |" for a, b in rows]
     L += ["", "## Prep check", f"- Scope: {p['prep']['scope']}", f"- Stock: {p['prep']['status']}"] + [f"- On the shelf · {a}: {b}" for a, b in p["prep"]["shelf"]] + [f"- Question for the chair: {q}" for q in p["prep"]["questions"]]
@@ -246,7 +257,7 @@ def md(p):
     L += ["", "## Summary and approvals", f"- Ruling recorded: {p['ruling'] or 'none yet'}", "- Flags: " + " · ".join(f"{a.title()} {len(p['flags'][a])}" for a in AGENTS)]
     L += [f"- Approval {a['request']}: {a['decision']} by {a['by']} at {records.when(a['ts'])}" for a in p["appr"]]
     if p["approved"]: L += [f"- This plan: Allow once by the chair on the Switch card, {p['stamp']}"]
-    L += ["", f"Contrast ratio: {p['ratio'] if p['ratio'] is not None else 'n/a'} (Laskey 2007 discriminator {p['cap']}, not a limit; contrast mL ÷ eGFR)" + (" · eGFR flagged unreliable in the packet" if p["unreliable"] else ""),
+    L += ["", f"Contrast ratio: {p['ratio'] if p['ratio'] is not None else 'n/a'} (Laskey 2007 discriminator {p['cap']}, not a limit; contrast mL ÷ eGFR)" + (f" · by Cockcroft-Gault creatinine clearance ({p['crcl']:.0f} mL/min): {p['cg_ratio']}" if p['cg_ratio'] is not None else "") + (" · eGFR flagged unreliable in the packet" if p["unreliable"] else ""),
           f"Thresholds: {p['th']['status_text'] if not p['th']['verified'] else 'verified by the chair'} · {'template logic verified' if p['th'].get('logic_verified') else LOGIC}", "",
           "**Status: " + ("APPROVED by the chair" if p["approved"] else "AWAITING CHAIR RULING") + "**", f"_Provenance: template {p['prov']['template']} · thresholds {p['prov']['thresholds']} · plan.py {p['prov']['plan']} · {p['prov']['day']} · packet id {p['prov']['packet']}_"]
     return "\n".join(L) + "\n"
@@ -332,11 +343,11 @@ def htm(p):
              f"<tr><th>Stock</th><td class='{'out' if p['prep']['out'] else 'ok'}'>{e(p['prep']['status'])}</td></tr></table><table style='margin-top:6px'><tr><th colspan=2>On the shelf, by class (from the STOCK line)</th></tr>{shelf}</table><p class=def style='margin-top:6px'><b>Questions for the chair</b> (the plan asks, it does not choose a device):</p><ul>{pq}</ul></div>")
     nf = sum(len(v) for v in p["flags"].values()); ratio = f"{p['ratio']}" if p["ratio"] is not None else "n/a"
     names = lambda ls_: ", ".join(e(l["id"] + " " + l["vessel"] + " " + l["pct"]) for l in ls_) or "none"
-    stg = (f"<h2>If the chair stages (illustration from the packet, not a recommendation)</h2><table><tr><th>Stage</th><th>Lesions</th><th>Devices</th></tr>"
-           f"<tr><td><b>Stage 1</b></td><td>{names(p['s1'])} (the procedure named in the packet)</td><td>{e(p['devices'])}</td></tr>"
-           f"<tr><td><b>Stage 2</b></td><td>{names(p['s2'])}</td><td class=out>not listed in the packet: Equipment to confirm</td></tr></table>") if p["staged"] else ""
+    stg = (f"<h2>Lesions in the packet's procedure line, and the others listed</h2><p class=def>A split of the packet text only; whether to stage is the chair's decision.</p><table><tr><th>Group</th><th>Lesions</th><th>Devices</th></tr>"
+           f"<tr><td><b>In the procedure line</b></td><td>{names(p['s1'])} (as named in the packet)</td><td>{e(p['devices'])}</td></tr>"
+           f"<tr><td><b>Other listed lesions</b></td><td>{names(p['s2'])}</td><td class=out>not listed in the packet: Equipment to confirm</td></tr></table>") if p["staged"] else ""
     its = []
-    if p["lk"]: its += ["The likelihood points rule is proposed: the chair verifies it.", "The packet lists equipment for both branches: confirm stock for the branch actually taken."]
+    if p["lk"]: its += ["The points rule is proposed: the chair verifies it.", "The packet lists equipment for both branches: confirm stock for the branch actually taken."]
     if not th["verified"]: its.append("Thresholds in thresholds.json are proposed: the chair verifies them before this plan is used.")
     if not th.get("logic_verified"): its.append("Template logic (likelihood weights and bands, prep rules, Imaging triggers, Heart Team factors, stage assignment, Labs' eGFR cutoff) is unreviewed.")
     if p["angio_missing"]: its.append("Angio data is missing for this case: no conclusion about complexity or staging.")
@@ -347,14 +358,14 @@ def htm(p):
     plabel = "indeterminate, pre-cath plan" if p["stage"] == "pre-cath" else ("known pathway, no angiography block in the packet" if p["angio_missing"] else "known intervention")
     third = "n/a" if p["angio_missing"] else f"{len(p['triggers'])} / 4"
     third_label = "angio findings flagged (calcium, flow, bifurcation, multivessel)"
-    if p["lk"]: third, third_label = p["lk"]["band"], f"likelihood band ({p['lk']['score']} pts, proposed rule)"
+    if p["lk"]: third, third_label = p["lk"]["band"], f"points band ({p['lk']['score']} pts, proposed rule)"
     precard = ""
     if p["pre"]:
         pre = p["pre"]; cr = "".join(f"<tr><td>{e(c['id'])}</td><td>{e(c['vessel'])}</td><td>{e(c['pct'])}</td><td>{e(c['calcium'])}</td></tr>" for c in pre["cta"])
         dr = "".join(f"<tr><td>{e(d)}</td><td>+{pt}</td></tr>" for d, pt in (p["lk"]["drivers"] if p["lk"] else [])) + (f"<tr><th>Total · band: {e(p['lk']['band'])}</th><th>{p['lk']['score']}</th></tr>" if p["lk"] else "")
         precard = (f"<h2>Pre-cath findings (CCTA, stress, symptoms)</h2><table><tr><th>CCTA lesion</th><th>Vessel</th><th>Stenosis</th><th>Calcium</th></tr>{cr}</table>"
                    f"<p class=def>Stress test: {e(pre['stress_text'] or 'n/a')} · EF: {e(str(pre['ef']) + '%' if pre['ef'] is not None else 'n/a')} · Symptoms: {e(pre['symptoms_text'] or 'n/a')}</p>"
-                   f"<table style='margin-top:6px'><tr><th>Likelihood driver (proposed points rule)</th><th style='width:60px'>Points</th></tr>{dr}</table>"
+                   f"<table style='margin-top:6px'><tr><th>Points driver (proposed points rule)</th><th style='width:60px'>Points</th></tr>{dr}</table>"
                    "<p class=def>A label from a points rule, not a probability. The chair decides whether to go on to PCI.</p>")
     decide = (f"<div class=dec><div>✔ Chair ruling recorded: approved on the Switch card, {e(p['stamp'])}.</div></div>" if p["approved"] else
               "<p class=def>For the chair's use: print and mark.</p><div class=dec><div><span class=bx></span> Approve as drafted</div><div><span class=bx></span> Chair changes the plan (record the change)</div><div><span class=bx></span> Equipment issue noted</div></div>")
@@ -372,10 +383,10 @@ def htm(p):
 {"<div class='strip warn'>PARSE WARNINGS: " + e(" | ".join(p['warn'])) + "</div>" if p['warn'] else ""}
 {"<div class='strip warn'>INCOMPLETE: no brief from " + e(", ".join(p['missing'])) + "</div>" if p['missing'] else ""}
 {"<div class='strip warn'>ANGIO DATA MISSING: complexity and staging were not assessed. Nothing on this page is a clearance.</div>" if p['angio_missing'] else ""}
-{"<div class='strip'>PRE-CATH PLAN: angiography has not been done. The likelihood is a label from a proposed points rule, not a probability, and the packet lists equipment for both branches.</div>" if p['stage'] == 'pre-cath' else ""}
+{"<div class='strip'>PRE-CATH PLAN: angiography has not been done. The band is a label from a proposed points rule, not a probability, and the packet lists equipment for both branches.</div>" if p['stage'] == 'pre-cath' else ""}
 {"" if (th['verified'] and th.get('logic_verified')) else "<div class='strip warn'>" + e(("Thresholds: " + th['status_text'] + ". ") if not th['verified'] else "") + e(("" if th.get('logic_verified') else LOGIC_SHORT)) + "</div>"}
 <div class=cards><div class=card><b>{nf}</b><span>flags from 4 agents</span></div><div class=card><b>{ratio}</b><span>contrast ratio (Laskey 2007 discriminator {p['cap']}, not a limit)</span></div><div class=card><b>{third}</b><span>{e(third_label)}</span></div><div class=card><b>{sum(1 for _, s in p['manifest'] if s.startswith('OUT'))}</b><span>devices out of stock</span></div></div>
-<p class=def>Contrast ratio = planned contrast (mL) ÷ eGFR. {e(th.get('contrast_ratio_basis', ''))}{e(caveat)}</p>{precard}
+<p class=def>Contrast ratio = planned contrast (mL) ÷ eGFR{e(f"; by Cockcroft-Gault creatinine clearance ({p['crcl']:.0f} mL/min, actual weight) it is {p['cg_ratio']}, the basis the published cutoffs used" if p['cg_ratio'] is not None else "")}. {e(th.get('contrast_ratio_basis', ''))}{e(caveat)}</p>{precard}
 <h2>Lesion map (Imaging)</h2><table><tr><th>Lesion</th><th>Vessel</th><th>Stenosis</th><th>TIMI</th><th>Calcium</th><th>Flag</th></tr>{rows or "<tr><td colspan=6>no lesions in the packet</td></tr>"}</table>
 <p style="font-size:9.5pt;color:#334">{trig} · Cath report: {e(p['report'])}</p>
 <h2>Rules that fired</h2><ul>{"".join(f"<li>{e(r)}</li>" for r in p['rules'])}</ul>

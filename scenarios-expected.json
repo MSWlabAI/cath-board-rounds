@@ -9,7 +9,7 @@
     "q_has": [
       "0 stents named",
       "Calcium moderate",
-      "Support devices on the shelf",
+      "The packet names no support device",
       "IVUS catheter is 0 on hand"
     ],
     "scope": "Branch A and Branch B"
@@ -51,7 +51,7 @@
     "q_has": [
       "2 lesions on CCTA",
       "Left main or bifurcation",
-      "Support devices on the shelf",
+      "The packet names no support device",
       "IVUS catheter is 0 on hand"
     ],
     "q_not": [

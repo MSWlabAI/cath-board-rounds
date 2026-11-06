@@ -27,3 +27,8 @@ def ef(text):
     """Last EF/LVEF % in a text (a later 'now' value beats an earlier 'prior' one), or None."""
     m = re.findall(r"(?:lv)?ef\s*[:=]?\s*(\d+)(?:\s*-\s*(\d+))?\s*%?", (text or "").lower())
     return min(int(a) for a in (m[-1][0], m[-1][1] or m[-1][0])) if m else None
+
+def territories(lesions):
+    """Distinct coronary territories among lesions (dicts with 'id' and 'vessel'): LAD (with diagonals, septals), LCx (with OM, ramus), RCA (with PDA, PLV) and the left main each count once; a vessel that cannot be read counts as its own. Two lesions in one territory are not multivessel disease."""
+    return {pk_family(l["vessel"]) or l["id"] for l in lesions}
+pk_family = family

@@ -5,6 +5,7 @@ usage: check.py --selftest                 offline, no Switch, no model
        check.py --streak                    consecutive clean runs at the end of runs.csv that used the CURRENT prompts
 A MISS (missing planted flag, extra flag, unrecognised line, wrong handoff, forbidden word, timeout) resets the streak; a FORMAT breach is logged only."""
 import argparse, csv, hashlib, json, os, re, sys, time, unicodedata
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import pk
 HERE = os.path.dirname(os.path.abspath(__file__)); EXP = json.load(open(os.environ.get("EXPECTED_FILE") or os.path.join(HERE, "..", "expected.json")))  # EXPECTED_FILE: score another day against its own key
 CSV = os.environ.get("RUNS_CSV") or os.path.join(HERE, "..", "runs.csv")  # RUNS_CSV: keep another day's runs out of the main log
 COLS = ["ts", "run", "case", "agent", "secs", "miss", "format", "prompt_hash", "brief"]
@@ -60,6 +61,9 @@ def grounding(case, body):
         if not l.startswith("🚩"): continue
         segs = [x.strip().lower() for x in re.sub(r"^🚩\s*\**FLAG:\**\s*", "", l).split(" · ")]
         trigs = [x for x in segs if re.match(r"calcium (moderate|severe)|timi below 3|bifurcation|ostial", x)]  # segment openers only, never the vessel name ("L1 LM bifurcation 70%")
+        if any(x.startswith("multivessel") for x in segs):
+            ids = set(re.findall(r"\bL\d+\b", l)); fams = {pk.family(les[i][1]) or i for i in ids if i in les}
+            if len(fams) < 2: out.append("multivessel needs lesions in more than one territory")
         for lid in set(re.findall(r"\bL\d+\b", l)) if trigs else ():
             if lid not in les: out.append(f"lesion {lid} is not in the packet"); continue
             c = les[lid]
@@ -103,6 +107,7 @@ def score(case, agent, text):
     if exp.get("noref"): miss += [f"reference tag where none applies: {l[:50]}" for l in flags if re.search(r"\bref\s*:", l, re.I)]  # no flag line of this agent/case may carry a tag
     miss += [f"missing taught reference /{rx}/" for rx in exp.get("ref", []) if not any("ref:" in l and rx in l for l in flags)]
     miss += [f"missing planted flag /{rx}/" for rx in exp.get("flag", []) if not any(re.search(rx, l, re.I) for l in flags)]
+    miss += [f"flag that must not be raised /{rx}/: {l[:50]}" for rx in exp.get("noflag", []) for l in flags if re.search(rx, l, re.I)]  # e.g. two lesions in one territory are not multivessel
     if len(flags) > lim["flags"]: miss.append(f"{len(flags)} flags (max {lim['flags']}): flag-everything")
     ho = lines[-1] if want else ""
     miss += [f"missing planted handoff content /{rx}/" for rx in exp.get("need", []) if not re.search(rx, ho, re.I)]
@@ -231,6 +236,8 @@ def selftest():
     bad("agreeing with a quoted verdict", "2", "labs", extra=['✅ the clinic says "safe to start" and I agree'])
     bad("wrong vessel on a lesion id", "2", "imaging", flags=["calcium moderate · L1 mid-LCx 90%", "TIMI below 3 · L1 mid-LAD 90% TIMI 2", "multivessel · L1, L2"]); bad("wrong percent on a lesion id", "2", "imaging", flags=["calcium moderate · L1 mid-LAD 70%", "TIMI below 3 · L1 mid-LAD 90% TIMI 2", "multivessel · L1, L2"])
     bad("inflected 'paused'", "2", "labs", extra=["✅ metformin was paused"])
+    t1 = len(pk.territories([{"id": "L1", "vessel": "prox-LAD"}, {"id": "L2", "vessel": "D1"}])) == 1 and len(pk.territories([{"id": "L1", "vessel": "LM"}, {"id": "L2", "vessel": "mid-RCA"}])) == 2
+    ok &= t1; print("PASS" if t1 else "FAIL", "territories: LAD plus a diagonal is one territory, left main plus RCA is two")
     bad("lowercase 'Ref:' with an invented source", "2", "labs", flags=["Cr 2.7 vs 2.2 · Ref: Lancet review", "eGFR 24 vs 170 mL"])
     print("SELFTEST", "OK" if ok else "FAILED"); return 0 if ok else 1
 

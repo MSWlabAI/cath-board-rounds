@@ -11,14 +11,14 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 | L1 | mid-LAD | 90% | TIMI 2 | calcium moderate | none |
 | L2 | mid-LCx | 70% | TIMI 3 | calcium none | none |
 
-Angio findings flagged: 3 of 4 (calcium moderate or severe; TIMI flow below 3; more than one lesion (multivessel))
+Angio findings flagged: 3 of 4 (calcium moderate or severe; TIMI flow below 3; lesions in more than one coronary territory (multivessel))
 
 ## Rules that fired
-- Contrast ratio above the Laskey 2007 discriminator and above 3: 7.1 (170 mL ÷ eGFR 24) is above 3.7, a cutoff that discriminated early creatinine rise in Laskey 2007 (E2), and above 3, where risk was clearest in Gurm 2011 (E1). Observational cutoffs, not a limit; both used creatinine clearance, not eGFR. Chair to decide whether to stage.
+- Contrast ratio at or above the Laskey 2007 discriminator (3.7) and above 3: 7.1 by eGFR (170 mL ÷ eGFR 24); 6.4 by Cockcroft-Gault creatinine clearance (170 mL ÷ 26 mL/min, actual weight). 3.7 discriminated early creatinine rise in Laskey 2007 (E2) and risk was clearest above 3 in Gurm 2011 (E1). Observational cutoffs on creatinine clearance, not limits; the higher of the two ratios is used. Chair to decide whether to stage.
 
-## If the chair stages (illustration from the packet, not a recommendation)
-- Stage 1: L1 mid-LAD (the procedure named in the packet)
-- Stage 2: L2 mid-LCx: devices not listed in the packet, Equipment to confirm
+## Lesions in the packet's procedure line, and the others listed (a split of the packet text only; whether to stage is the chair's decision)
+- In the procedure line: L1 mid-LAD (as named in the packet)
+- Other listed lesions: L2 mid-LCx: devices not listed in the packet, Equipment to confirm
 
 ## Equipment manifest
 | Item | Stock |
@@ -61,8 +61,8 @@ Angio findings flagged: 3 of 4 (calcium moderate or severe; TIMI flow below 3; m
 - Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 2 · Meds 2 · Equipment 0
 
-Contrast ratio: 7.1 (Laskey 2007 discriminator 3.7, not a limit; contrast mL ÷ eGFR) · eGFR flagged unreliable in the packet
+Contrast ratio: 7.1 (Laskey 2007 discriminator 3.7, not a limit; contrast mL ÷ eGFR) · by Cockcroft-Gault creatinine clearance (26 mL/min): 6.4 · eGFR flagged unreliable in the packet
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template 6fbf68f001 · thresholds 51ec501c23 · plan.py 4b8c7ba9c3 · day.md · packet id n/a_
+_Provenance: template 7b83bc09dd · thresholds bea3b78f4a · plan.py fa5860885c · day.md · packet id n/a_

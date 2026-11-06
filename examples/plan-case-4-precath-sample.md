@@ -10,7 +10,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 - EF: 35%
 - Symptoms: typical angina, exertional dyspnea
 - CCTA L1 distal RCA 60% · calcium moderate
-- Likelihood band (proposed points rule): higher (8 points; not a probability)
+- Points band (proposed points rule): higher (8 points; not a probability)
   - CCTA 60%, intermediate stenosis (L1 distal RCA; E6) (+1)
   - stress test positive (MPI, inferior wall) (+2)
   - typical angina (+1)
@@ -26,7 +26,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 Angio findings flagged: 0 of 4
 
 ## Rules that fired
-- Likelihood band (proposed rule, 8 points): higher. A label from a points rule, not a probability. Chair to decide; the packet lists equipment for both branches below.
+- Points band (proposed rule, 8 points): higher. The band word only labels a points range; it is not a probability and not a clinical pre-test probability. Chair to decide; the packet lists equipment for both branches below.
 
 ## Equipment manifest
 **Branch A · stays diagnostic**
@@ -53,7 +53,7 @@ Angio findings flagged: 0 of 4
 - Question for the chair: Calcium moderate on L1 distal RCA (CCTA): the packet names no calcium-modification device or intravascular imaging catheter. Chair to decide whether any is needed.
 - Question for the chair: No wire is named in the packet's device lines: chair to confirm.
 - Question for the chair: No balloon is named for the PCI branch: chair to confirm.
-- Question for the chair: EF 35% in the packet. The 2015 SCAI/ACC consensus names high-risk PCI (multivessel, left main, last conduit) with severely reduced EF but gives no EF cutoff (E10). Support devices on the shelf: Impella CP 2. Chair to decide whether support is needed.
+- Question for the chair: EF 35% in the packet. The 2015 SCAI/ACC consensus names high-risk PCI (multivessel, left main, last conduit) with severely reduced EF but gives no EF cutoff (E10); this question fires at EF 35% or lower, the author's heuristic. The packet names no support device; the stock list shows: Impella CP 2. Whether support is needed is the chair's decision.
 - Question for the chair: Calcium or left main on CCTA, and IVUS catheter is 0 on hand with resupply ETA 13:00, after the scheduled 12:30 start: chair to decide how to proceed.
 
 ## Flags from the agents
@@ -76,4 +76,4 @@ Contrast ratio: n/a (Laskey 2007 discriminator 3.7, not a limit; contrast mL ÷ 
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template 6fbf68f001 · thresholds 51ec501c23 · plan.py 4b8c7ba9c3 · day.md · packet id n/a_
+_Provenance: template 7b83bc09dd · thresholds bea3b78f4a · plan.py fa5860885c · day.md · packet id n/a_

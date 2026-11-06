@@ -25,14 +25,22 @@ def table_mismatch(rows, ru):
     out += [f"Case {k} was ruled but has no row" for k in sorted(set(ru) - seen)]
     return out
 
+def flag_count(d, c):
+    """Number of 🚩 lines the four agents posted for case c (from the recorder's briefs), or None when no briefs are recorded."""
+    fs = [os.path.join(d, f"case-{c}", f) for f in ("imaging.md", "labs.md", "meds.md", "equipment.md")]; fs = [f for f in fs if os.path.exists(f)]
+    return sum(l.lstrip().startswith("🚩") for f in fs for l in open(f)) if fs else None
+
 def summary(rows, d, approved=False, rec=None):
     """HTML 'Session summary' (ruling and plan status per case) and 'Approvals' (every card decision) from the recorder's records."""
     e = html.escape; ap = records.approvals(d); ru = records.rulings(d); out = []
     for r in rows:
         c = [x.strip() for x in r.strip().strip("|").split("|")][1]; plan = sorted((x for x in ap if re.search(records.plan_pattern(c) if c in "123456789" and len(c) == 1 else r"\A\Z", x["what"], re.I | re.S)), key=lambda x: x["ts"])
         last = plan[-1] if plan else None; st = "not requested" if not last else (f"signed {records.when(last['ts'])}" if last["decision"] == "Allow once" and last.get("by") == records.chair() else f"{last['decision'].lower()} {records.when(last['ts'])}")
-        out.append(f"<tr><td>{e(c)}</td><td>{e(ruling_text(ru, c))}</td><td>{e(st)}</td></tr>")
-    s = "<h2>Session summary</h2><table><tr><th>Case</th><th>Chair's ruling as recorded</th><th>Plan</th></tr>" + "".join(out) + "</table>"
+        n = flag_count(d, c); rt = ruling_text(ru, c)
+        note = f"{n} agent flag{'s' if n != 1 else ''}" if n is not None else "no briefs recorded"
+        if n and "NO FLAGS RAISED" in rt.upper(): note += " · ruled NO FLAGS RAISED despite agent flags: chair to confirm"
+        out.append(f"<tr><td>{e(c)}</td><td>{e(rt)}</td><td>{e(note)}</td><td>{e(st)}</td></tr>")
+    s = "<h2>Session summary</h2><table><tr><th>Case</th><th>Chair's ruling as recorded</th><th>Agent flags</th><th>Plan</th></tr>" + "".join(out) + "</table>"
     rows_ap = "".join(f"<tr><td>{e(records.when(x['ts']))}</td><td>{e(x['request'])}</td><td class='{'ok' if x['decision'].startswith('Allow') else 'out'}'>{e(x['decision'])}</td><td>{e(x['what'])}</td><td>{e(x['by'])}</td></tr>" for x in ap)
     if approved and rec: rows_ap += f"<tr><td>{e(records.when(rec['ts']))}</td><td>{e(rec['request'])}</td><td class=ok>Allow once</td><td>signed this board: {e(rec['what'])}</td><td>{e(rec['by'])}</td></tr>"  # the real record that authorised it
     return s + "<h2>Approvals</h2>" + (f"<table><tr><th>Time</th><th>Request</th><th>Decision</th><th>What</th><th>By</th></tr>{rows_ap}</table>" if rows_ap else "<p>No approval decisions recorded.</p>")
