@@ -7,11 +7,19 @@ For the operator (not the chair's script). The chair's flow is in `README.md`; t
 1. **AC power on, sleep prevented:** `caffeinate -dimu -t 28800 &`. A sleeping Mac stops the recorder and the agents without any error.
 2. **At least 10 GB free** on the system disk (`df -h /`). Mattermost, Docker and the agent CLIs all write.
 3. **Launch the Switch Console from a fresh Terminal**, with the Cursor CLI's `agent` ahead of any other `agent` on PATH (`which agent` must print the Cursor one). A Console started from the Dock keeps the old PATH.
-4. **Start the helpers, one copy each:** `python3 tools/recorder.py` and `python3 tools/callback_forward.py`. Check `pgrep -f tools/recorder.py | wc -l` prints `1` and that `briefs/_heartbeat` is under 30 s old.
-5. **After any room rebuild** run `tools/after_rebuild.sh` (needs `MM_ENV_FILE` and, if you use it, `PREP_CHECK`). It points the tools at the new room, restarts the recorder, pins the intro and runs the offline tests.
+4. **Start the helpers, one copy each:** `python3 tools/recorder.py` and `python3 tools/callback_forward.py`. Check `pgrep -f tools/recorder.py | wc -l` prints `1` and that `briefs/_heartbeat` is under 10 s old (signing refuses if it is over 180 s). Watch `briefs/_recorder.log` for `error:` lines during the take: after one, the recorder needs a few seconds before it logs an Allow (signing waits up to 10 s).
+5. **After any room rebuild** run `tools/after_rebuild.sh` (needs `MM_ENV_FILE` and, if you use it, `PREP_CHECK`). It points the tools at the new room, clears the old state (including the Clerk's old signed files in `~/agents/cath-clerk/plans/` and `board-final.*`), restarts the recorder, resets Meds, pins the intro and runs the offline tests. Add `--streak` only if you want the 10-run check; it fills the room with test packets, so do it before you create the clean filming room. In the terminal you film from, `unset ROOM`: a stale exported `ROOM` makes `./case` post to the old room.
 6. **Prompt drift:** `python3 tools/sync_prompts.py --console` must print no DRIFT. If it does, re-import `~/agents/cath-board-rounds-final.yaml` (Console: template, then Use template) before filming.
 7. **Wipe stale state** only with the recorder stopped: `rm -rf briefs/case-* briefs/packet-*.json briefs/approvals.jsonl briefs/rulings.json briefs/board-draft.md`, then start it again.
 8. **After the Mac wakes,** ping each agent once (any short message) before the first real packet.
+
+## Rehearse once, exactly as filmed
+
+- Same browser zoom, with the filming Chrome open (the PDF is rendered by a headless Chrome and must still be produced).
+- Read the card's text before you click: signing matches it. `Write the Case 2 plan PDF` and `Write the final board files` are the expected wordings; a card that names two cases, or a plan for the board, will refuse to sign.
+- Only `Allow once`, chosen by the chair account, signs. `Allow for this session` does not.
+- `docker exec` the Mattermost container's `date` against the host's `date`: a clock skew of more than a few seconds can make an Allow look older than the briefs.
+- Open a PDF only after reading `PLAN SIGNED plans/plan-case-N.pdf` or the board's `written` line: after a Decline nothing is written, and an older file would still be on disk if the cleanup was skipped.
 
 ## During a take
 

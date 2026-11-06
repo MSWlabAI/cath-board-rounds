@@ -443,10 +443,24 @@ def selftest():
     print("PASS" if c8 else "FAIL", "provenance carried in md and html"); ok &= c8
     with tempfile.TemporaryDirectory() as td:  # signing needs a real, newer, matching Allow
         j = lambda *r: open(os.path.join(td, "approvals.jsonl"), "w").write("\n".join(json.dumps(x) for x in r) + "\nnot json\n")
-        A = lambda dec, ts, what="Run plan tool for case 2": dict(id=str(ts), ts=ts, request="A1", decision=dec, what=what, by="chair")
-        j(A("Allow once", 100)); c1 = bool(records.signed(td, r"\bcase 2\b", 50)) and not records.signed(td, r"\bcase 2\b", 150) and not records.signed(td, r"\bcase 3\b", 50)
-        j(A("Allow once", 100), A("Decline", 200)); c2 = not records.signed(td, r"\bcase 2\b", 50)
-        j(A("Decline", 100), A("Allow once", 200)); c3 = bool(records.signed(td, r"\bcase 2\b", 50))
+        A = lambda dec, ts, what="Run plan tool for case 2": dict(id=str(ts), ts=ts, request="A1", decision=dec, what=what, by=records.chair())
+        j(A("Allow once", 100)); c1 = bool(records.signed(td, records.plan_pattern("2"), 50)) and not records.signed(td, records.plan_pattern("2"), 150) and not records.signed(td, records.plan_pattern("3"), 50)
+        j(A("Allow once", 100), A("Decline", 200)); c2 = not records.signed(td, records.plan_pattern("2"), 50)
+        j(A("Decline", 100), A("Allow once", 200)); c3 = bool(records.signed(td, records.plan_pattern("2"), 50))
+        ch = records.chair(); B = lambda dec, ts, what, by=ch: dict(id=str(ts) + what, ts=ts, request="A2", decision=dec, what=what, by=by)
+        j(B("Allow once", 100, "Write the Case 2 plan PDF")); h1 = bool(records.signed(td, records.plan_pattern("2"), 50))
+        j(B("Allow once", 100, "Write the Case 2 plan PDF", by="clerk")); h2 = not records.signed(td, records.plan_pattern("2"), 50)  # only the chair's click signs
+        j(B("Allow for this session", 100, "Write the Case 2 plan PDF")); h3 = not records.signed(td, records.plan_pattern("2"), 50)
+        j(B("Allow once", 100, "Write the plan for case 2 and case 3")); h4 = not records.signed(td, records.plan_pattern("2"), 50) and not records.signed(td, records.plan_pattern("3"), 50)
+        j(B("Allow once", 100, "Write the Case 2 plan for the board")); h5 = not records.signed(td, records.plan_pattern("2"), 50) and not records.signed(td, records.BOARD_PATTERN, 50)
+        j(B("Allow once", 100, "Open the dashboard")); h6 = not records.signed(td, records.BOARD_PATTERN, 50)
+        j(B("Allow once", 100, "Write the final board files"), B("Closed", 200, "Write the final board files")); h7 = not records.signed(td, records.BOARD_PATTERN, 50)  # a later Closed edit of the card cancels
+        j(B("Allow once", 100, "Write the final board files")); h8 = bool(records.signed(td, records.BOARD_PATTERN, 50))
+        import board_final as bf
+        rows = ["| 07:30 | 2 | 74M | PCI | 09:30 | NO FLAGS RAISED | x |", "| 09:30 | 3 | 68M | PCI | 11:00 | ON HOLD | y |"]
+        ru = {"2": {"text": "Case 2 = ON HOLD ; k ; operator to confirm", "ts": 1}, "3": {"text": "Case 3 = ON HOLD ; k", "ts": 1}}
+        h9 = len(bf.table_mismatch(rows, ru)) == 1 and not bf.table_mismatch(rows[1:], ru)
+        for name, cond in (("signing: the chair's own Allow once counts", h1), ("signing: an Allow chosen by anyone but the chair does not", h2), ("signing: Allow for this session does not", h3), ("signing: a card naming two cases signs neither", h4), ("signing: a plan card containing 'board' signs neither plan nor board", h5), ("signing: 'dashboard' is not the board", h6), ("signing: a later Closed edit of the card cancels the Allow", h7), ("signing: the board card signs the board", h8), ("board table must match the chair's recorded rulings", h9)): print("PASS" if cond else "FAIL", name); ok &= cond
         for name, cond in (("signing: Allow newer than briefs counts, older or other case does not", c1), ("signing: a later Decline cancels", c2), ("signing: later Allow after Decline counts, bad JSONL line tolerated", c3)): print("PASS" if cond else "FAIL", name); ok &= cond
     for bad in ("0", "10", "a", "1;rm"):
         try: build(bad, b, th=th); print("FAIL case validation", bad); ok = False
@@ -467,8 +481,11 @@ if __name__ == "__main__":
     if "--approved" in a:  # a stamp needs a real Allow: briefs from the recorder's folder, an Allow decided after the newest brief, and no --force
         if "--force" in a: print("PLAN INCOMPLETE: --approved cannot be combined with --force"); sys.exit(3)
         rd = os.path.join(ROOT, "briefs")
+        if not re.fullmatch(r"[1-9]", a[0]): print("PLAN INCOMPLETE: the case must be one digit, 1 to 9"); sys.exit(3)
         if not os.path.isdir(arg("--briefs") or ""): print("PLAN INCOMPLETE: signing needs the recorder's briefs folder"); sys.exit(3)
-        if not records.signed(rd, rf"\bcase {a[0]}\b", getattr(read_dir, "newest", 0), wait=SIGN_WAIT_S):
+        if os.path.realpath(arg("--briefs")) != os.path.realpath(os.path.join(rd, f"case-{a[0]}")): print(f"PLAN INCOMPLETE: signing Case {a[0]} needs the recorder's briefs/case-{a[0]} folder, not {arg('--briefs')}"); sys.exit(3)
+        after = max(getattr(read_dir, "newest", 0), records.rulings(rd).get(a[0], {}).get("ts", 0))  # an Allow must be newer than the briefs AND than the chair's latest ruling for this case
+        if not records.signed(rd, records.plan_pattern(a[0]), after, wait=SIGN_WAIT_S):
             last = (records.approvals(rd) or [{}])[-1]; print(f"PLAN INCOMPLETE: no Allow once recorded for this plan after its newest brief (last card: {last.get('decision', 'none')} {last.get('what', '')[:50]}); not signing"); sys.exit(3)
     p, files, err = write(a[0], bt, arg("--out", os.path.join(ROOT, "plans")), "--pdf" in a, "--approved" in a)
     print("\n".join(files))

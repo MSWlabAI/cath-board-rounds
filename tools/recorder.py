@@ -38,8 +38,8 @@ def sweep(tok, ch, ids, since, seen):
             if p["message"].lstrip().startswith("BOARD —") and "|---" in p["message"]: open(os.path.join(OUT, "board-draft.md"), "w").write(p["message"].strip() + "\n"); wrote += 1
             n = records.note(p)
             if n and n[0] == "approval":
-                have = {a["id"] for a in records.approvals(OUT)}
-                if n[1]["id"] not in have:
+                have = {(a["id"], a["decision"]) for a in records.approvals(OUT)}  # one record per card state, so a later Decline or Closed edit is kept
+                if (n[1]["id"], n[1]["decision"]) not in have:
                     with open(os.path.join(OUT, "approvals.jsonl"), "a") as f: f.write(json.dumps(n[1]) + "\n")
             elif n and n[0] == "ruling":
                 cur = records.rulings(OUT)
