@@ -44,5 +44,9 @@ def main(a):
         print(f"{hashlib.sha256(txt.encode()).hexdigest()[:16]}  {name:10} {prov:7} {len(txt)} chars")
     if "--write" in a:
         for out in ("template.local.yaml", "cath-board-rounds-claude.yaml", "cath-board-rounds-final.yaml"): open(os.path.join(adir, out), "w").write(t.replace("{$agents_dir}", adir))
+    else:  # check mode also compares the import copies, so a stale yaml cannot be re-imported by accident
+        for out in ("cath-board-rounds-claude.yaml", "cath-board-rounds-final.yaml"):
+            f = os.path.join(adir, out)
+            if os.path.exists(f) and open(f).read() != t.replace("{$agents_dir}", adir): print(f"DRIFT import copy: {out} differs from template.yaml (run with --write)"); bad = 1
     return bad
 if __name__ == "__main__": sys.exit(main(sys.argv[1:]))

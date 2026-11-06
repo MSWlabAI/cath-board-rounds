@@ -14,7 +14,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 Angio findings flagged: 3 of 4 (calcium moderate or severe; TIMI flow below 3; more than one lesion (multivessel))
 
 ## Rules that fired
-- Contrast ratio above published cutoffs: 7.1 (170 mL ÷ eGFR 24) is above 3.7, a cutoff that discriminated early creatinine rise in Laskey 2007 (E2), and above 3, where risk was clearest in Gurm 2011 (E1). Observational cutoffs, not a limit; both used creatinine clearance, not eGFR. Chair to decide whether to stage.
+- Contrast ratio above the Laskey 2007 discriminator and above 3: 7.1 (170 mL ÷ eGFR 24) is above 3.7, a cutoff that discriminated early creatinine rise in Laskey 2007 (E2), and above 3, where risk was clearest in Gurm 2011 (E1). Observational cutoffs, not a limit; both used creatinine clearance, not eGFR. Chair to decide whether to stage.
 
 ## If the chair stages (illustration from the packet, not a recommendation)
 - Stage 1: L1 mid-LAD (the procedure named in the packet)
@@ -61,8 +61,8 @@ Angio findings flagged: 3 of 4 (calcium moderate or severe; TIMI flow below 3; m
 - Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 2 · Meds 2 · Equipment 0
 
-Contrast ratio: 7.1 (published cutoff 3.7, Laskey 2007; contrast mL ÷ eGFR) · eGFR flagged unreliable in the packet
+Contrast ratio: 7.1 (Laskey 2007 discriminator 3.7, not a limit; contrast mL ÷ eGFR) · eGFR flagged unreliable in the packet
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template 6fbf68f001 · thresholds 51ec501c23 · plan.py 8ba2fb9faf · day.md · packet id n/a_
+_Provenance: template 6fbf68f001 · thresholds 51ec501c23 · plan.py 4b8c7ba9c3 · day.md · packet id n/a_

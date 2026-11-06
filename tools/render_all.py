@@ -19,4 +19,5 @@ def main(out):
             pdf = os.path.join(tmp, f"plan-case-{c}.pdf"); ok = not err and os.path.exists(pdf) and os.path.getsize(pdf) > 5000
             bad += not ok; print(("ok  " if ok else "FAIL"), d, "case", c, h[:4], f"{os.path.getsize(pdf) // 1024 if os.path.exists(pdf) else 0} KB", ("ERR " + str(err)) if err else "", "missing:" + ",".join(p["missing"]) if p.get("missing") else "")
     print(f"{15 - bad}/15 PDFs written -> {out}"); return bad
+if __name__ == "__main__" and {"-h", "--help"} & set(sys.argv): print(__doc__); sys.exit(0)
 if __name__ == "__main__": sys.exit(1 if main(sys.argv[1] if len(sys.argv) > 1 else "/tmp/plans-all") else 0)

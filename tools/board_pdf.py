@@ -11,5 +11,5 @@ def render(src, out, approved, extra=""):
 <table><tr>{th}</tr>{body}</table>
 {extra}<div class=sig><div><b>Chair</b><br><span style="font-size:9pt;color:#556">Rulings are the chair's. Agents only flagged.</span></div><div class="stamp{'' if approved else ' pend'}">{'SIGNED BY CHAIR' if approved else 'DRAFT'}</div></div></body></html>"""
     h = out[:-4] + ".html"; open(h, "w").write(page)
-    subprocess.run([plan.CHROME, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", f"--print-to-pdf={out}", "file://" + os.path.abspath(h)], capture_output=True, timeout=60); os.remove(h)
+    plan.chrome_pdf(h, out, 60); os.remove(h)
 if __name__ == "__main__": render(sys.argv[1], sys.argv[2], "--approved" in sys.argv)

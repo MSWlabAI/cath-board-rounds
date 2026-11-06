@@ -14,7 +14,8 @@ def day2_fixtures():
         open(os.path.join(EX, f"briefs-day2-case-{c}.md"), "w").write(t + "\n")
 
 def main(pdf=True):
-    day2_fixtures(); import plan, tempfile
+    day2_fixtures(); import plan, tempfile, time
+    plan.SIGNED_AT = time.mktime((2026, 11, 4, 9, 0, 0, 0, 0, -1))  # a fixed Allow time, so the signed sample is reproducible
     os.environ["RECORDS_DIR"] = tempfile.mkdtemp()  # an empty records folder: samples never pick up the live room's rulings or approvals
     jobs = [("briefs-case-2.md", "2", "day.md", "plan-case-2-draft-sample", False), ("briefs-case-2.md", "2", "day.md", "plan-case-2-approved-sample", True),
             ("briefs-case-4-precath.md", "4", "day.md", "plan-case-4-precath-sample", False),
@@ -29,4 +30,6 @@ def main(pdf=True):
         print(name, "ERR " + err if err else "ok", "missing:" + ",".join(p["missing"]) if p["missing"] else "")
     for f in os.listdir(tmp): os.remove(os.path.join(tmp, f))
     os.rmdir(tmp)
-if __name__ == "__main__": main("--no-pdf" not in sys.argv)
+if __name__ == "__main__":
+    if {"-h", "--help"} & set(sys.argv): print(__doc__); sys.exit(0)
+    main("--no-pdf" not in sys.argv)

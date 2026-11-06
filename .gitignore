@@ -13,3 +13,4 @@ __pycache__/
 *.local.yaml
 plans/
 briefs/
+.private-patterns

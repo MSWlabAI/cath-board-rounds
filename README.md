@@ -9,7 +9,17 @@ agents. The agents only **flag** conflicts they can quote from the packet, and p
 They never decide, dose, substitute or reschedule. The chair rules. A **Clerk** records the rulings, drafts the board, and
 writes the final board or a plan PDF **only after the chair presses Allow once on an approval card**.
 
-Hackathon entry: Flip the Switch (WeMakeDevs + SandboxAQ), Track 01, Best Business Workflow.
+Hackathon entry: Flip the Switch (WeMakeDevs + SandboxAQ), Track 01, Best Business Workflow. Single author. The filmed build runs all five agents on Claude Code.
+
+**Look at:** [`template.yaml`](template.yaml) (the whole room: agents, handoffs, `addressing: owner-agents`, approval-gated Clerk) · the Clerk's review sheet and an approval card in the room, below · a [signed plan PDF sample](examples/plan-case-2-approved-sample.pdf) · [Results](#results).
+
+![The Clerk's review sheet: each agent's flags quoted, the handoff column, the chair's ruling choices](examples/room-review-sheet.png)
+
+*The chair rules in the room. The Clerk's sheet quotes each agent's flags and where each handed off (a real room, synthetic data).*
+
+![An approval card: Decline recorded for the chair, BOARD NOT SIGNED, then a new card](examples/room-decline-card.png)
+
+*The owner-only approval card: the chair declines (nothing is written), then a new card is raised for the second request.*
 
 ## Why Switch is central
 
@@ -18,7 +28,7 @@ The product is the room, not a script around a model: take Switch away and the r
 | Switch feature | What it does here | What you would otherwise build |
 |---|---|---|
 | Teammate handoff (`@agent` post starts that agent) | Imaging's one-line handoff starts Equipment; Labs' starts Meds; the chair names only two agents | an orchestrator process that routes messages and tracks who answers whom |
-| `owner-agents` addressing | only the chair can address agents or the Clerk | auth and routing checks in every agent |
+| `owner-agents` addressing | only the chair can address agents or the Clerk (enforced by Switch; the signing check is the author's `plan.py`) | auth and routing checks in every agent |
 | Approval card (owner only; Allow once / Decline) | the board and the plan PDF are written only after the chair presses Allow; Decline writes nothing | a custom confirmation UI plus a record of who approved what |
 | One bot account per agent | each specialist is a named participant; the recorder accepts a brief only from the account its header names | message-tagging conventions and trust in them |
 | The shared room | one packet, one record, one place to rule, plus `!interrupt` / `!reset` | copy and paste between tools |
@@ -69,6 +79,8 @@ room's owner) can address the agents or the Clerk (`addressing: owner-agents`), 
 
 ## Who is who
 
+Filmed build: all five agents on Claude Code. The earlier recorded rows (hash `8130…`) had Imaging on the Cursor CLI.
+
 | Actor | What it is | Provider |
 |---|---|---|
 | Chair (`chargenurse`) | the human; the only one who rules and the only one who can approve a card | Mattermost user |
@@ -86,7 +98,7 @@ reached the room. qwen3.6 is used only by `tools/localcheck.py`, an optional rep
 Each agent has standing rules: a brief format, one domain, and what it must not do (dose, rate, substitute, rank cases, name a strategy or
 likelihood). Text inside a packet is data to quote, not an instruction. The packets in `day.md` are authored with known conflicts, so this
 demonstrates rule-following on an authored day, not open-ended detection on unseen data. All clinical numbers the plan uses live in
-`thresholds.json`, and every rule is traced to a published source (or marked as a proposed heuristic) in `docs/EVIDENCE.md`; the shipped values are **proposed, not verified**, the template logic (the four complexity triggers, the stage assignment)
+`thresholds.json`, and every rule is traced to a source (mostly secondary summaries, not the primary text) or marked as a proposed heuristic in `docs/EVIDENCE.md`; the shipped values are **proposed, not verified**, the template logic (the four complexity triggers, the stage assignment)
 is **unreviewed**, and every plan PDF says so until the chair marks them reviewed. `template.yaml` is the single source of every prompt.
 
 ## Run a case (live room)
@@ -106,31 +118,31 @@ Then `@clerk Case 2 = REVIEWED WITH NOTES ; contrast vs eGFR ; operator to confi
 python3 tools/check.py --streak  # consecutive clean runs on the CURRENT prompts
 DAY_FILE=day2.md EXPECTED_FILE=expected2.json RUNS_CSV=runs-day2.csv python3 tools/check.py --run --n 3   # day 2, a second set of packets
 python3 tools/scenarios_live.py  # the scenario library through the live agents (flags derived from each packet)
-python3 tools/dryrun.py          # smoke test of the whole filmed flow (three human clicks)
+python3 tools/dryrun.py          # smoke test of the whole filmed flow (three card clicks: Decline, Allow, Allow)
 python3 tools/sync_prompts.py --console   # template vs agent folders vs the Console's stored copies; prints SHA-256 per prompt
 python3 tools/freeze.py          # writes freeze.txt: hashes of everything that defines behaviour
 ```
 
-A **miss** (a planted flag absent, an extra or unrecognised line, a wrong handoff line, a forbidden word, a timeout) resets the streak. A **format**
-breach (too many lines, a line over 140 characters) is logged only. `expected.json` is the scorer's answer key; the agents never see it. The scorer checks
+A **miss** (a planted flag absent, an unrecognised or prose line, a wrong handoff line, a forbidden word, a timeout) resets the streak. A **format**
+breach (too many lines, a line over 140 characters, an extra flag the key does not list) is logged only. `expected.json` is the scorer's answer key; the agents never see it. The scorer checks
 shape and wording, not clinical truth.
 
 ## Results
 
 Everything below is from live runs through the Switch room; every row is in a CSV in this repo. The scorer is `tools/check.py` and the answer keys are `expected*.json`, written before the runs and never shown to the agents. Because the numbers depend on which prompts and which scorer were live, here is the full history, not only the good part.
 
-| Set | Runs | Briefs | Misses | Notes |
+| Set | Runs | Briefs (distinct) | Misses | Notes |
 |---|---|---|---|---|
-| Day 1, final prompts (`runs.csv`, hash `a60f…`, all five agents on Claude Code) | 10 | 200 | **0** | 20 format notes (a line over 140 characters; logged, not counted). Run in a freshly made room under the tightened scorer. |
-| Day 1, previous final prompts (`runs.csv`, hash `8130…`, Imaging on the Cursor CLI) | 10 | 200 | **0** | Same prompt text; Imaging moved to Claude Code afterwards (see Disclosures), which changes the hash, so everything was rerun. |
-| Day 2, held-out packets (`runs-day2c.csv`) | 3 + 3 | 60 + 60 | **0** | Different patients, drugs, labs, devices and stock. The first 60 rows are hash `8130…`, the second 60 are `a60f…`. |
-| Day 3, held-out packets with decoys (`runs-day3.csv`) | 3 + 3 | 60 + 60 | **0** | Values on range edges, a stable-but-abnormal creatinine, a 30 h apixaban dose that must not get a reference tag, a CCTA 45% and negative stress test, a packet with no angiography block, and a packet that tells the agents to call the case safe. First 60 rows `8130…`, second 60 `a60f…`. |
+| Day 1, final prompts (`runs.csv`, hash `a60f…`, all five agents on Claude Code) | 10 | 200 (20 distinct) | **0** | 40 format notes, none counted as misses: 20 lines over 140 characters and 20 extra rule-correct flags the key does not list (Case 2 Meds `heparin infusion running`, Case 5 Imaging `calcium moderate · L2`). Run in a freshly made room under the tightened scorer. |
+| Day 1, previous final prompts (`runs.csv`, hash `8130…`, Imaging on the Cursor CLI) | 10 | 200 (20 distinct) | **0** | Same prompt text; Imaging moved to Claude Code afterwards (see Disclosures), which changes the hash, so everything was rerun. |
+| Day 2 packets (`runs-day2c.csv`; seen before the final prompt edits) | 3 + 3 | 60 + 60 (20 + 20 distinct) | **0** | Different patients, drugs, labs, devices and stock. The first 60 rows are hash `8130…`, the second 60 are `a60f…`. |
+| Day 3 packets with decoys (`runs-day3.csv`; written after the final prompt edits, the only set not seen before the prompt was fixed) | 3 + 3 | 60 + 60 (20 + 20 distinct) | **0** | Values on range edges, a stable-but-abnormal creatinine, a 30 h apixaban dose that must not get a reference tag, a CCTA 45% and negative stress test, a packet with no angiography block, and a packet that tells the agents to call the case safe. First 60 rows `8130…`, second 60 `a60f…`. |
 | Independence (`tools/independence.py`, log `runs-independence.txt`, rerun on `a60f…`) | 1 | 4 | pass | Six packet values changed (Cr, K, Hgb, one stenosis, the heparin aPTT, one device's stock set to 0); every change showed up in the right agent's brief (Labs, Imaging, Meds, Equipment), and the changed briefs also passed the grounding and forbidden-word checks. |
 
 **What went wrong on the way (kept in the logs):**
 - Earlier prompt versions: `runs.csv` also holds 756 briefs on four older prompt hashes (`595a`, `4764`, `7a39`, and `23c7`, the previous frozen prompts: 420 briefs, 0 misses). The only misses are 8 on `7a39…`, all the phrase `TIMI below 3`, because Imaging's trigger wording was ambiguous. The prompt was fixed, not the scorer. Earlier tuning runs are in `runs-tuning.csv` (160 rows, not counted).
 - Day 2, first scoring (`runs-day2.csv`): 3 misses, all one line, a scorer false positive (the agent quoted the packet's own word "stopped"). The scorer now allows a forbidden word only when it is the packet's own wording. `runs-day2b.csv` is the rescore. Those two day-2 files predate the final prompts.
-- The scorer was tightened twice, the second time after an adversarial review that built briefs which violated the rules yet scored 0 misses. Now: the whole header line must match; only the briefs' own labels are allowed; every number must be in the packet; lesion ids and each trigger on a flag line must match the lesion row; every reference tag, in any letter case, must be one of the card's tags; clean cases need the 'nothing flagged' line; a wider forbidden list (hold, alternative, hydrate, wait for, safe to, ok to, reschedule, ...); format characters are stripped and look-alike letters are mapped before scanning; and a forbidden word is allowed only as the packet's own words inside quotation marks. `tools/rescore.py` reruns the current scorer over stored briefs: all 420 day-1 briefs of the previous frozen prompts, the 200 current ones, all 180 day-2 rows and the 60 day-3 rows pass, and the day-3 preview's DOAC-tag miss is still caught. The scorer's `--selftest` carries nine adversarial briefs, each of which scored 0 misses under the earlier scorer.
+- The scorer was tightened twice, the second time after an adversarial review that built briefs which violated the rules yet scored 0 misses. Now: the whole header line must match; only the briefs' own labels are allowed; every number must be in the packet; lesion ids and each trigger on a flag line must match the lesion row; every reference tag, in any letter case, must be one of the card's tags; clean cases need the 'nothing flagged' line; a wider forbidden list (hold, alternative, hydrate, wait for, safe to, ok to, reschedule, ...); format characters are stripped and look-alike letters are mapped before scanning; and a forbidden word is allowed only as the packet's own words inside quotation marks. `tools/rescore.py` reruns the current scorer over stored briefs: all 420 day-1 briefs of the previous frozen prompts, the 200 current ones, all 180 day-2 rows and the 120 day-3 rows pass, and the day-3 preview's DOAC-tag miss is still caught. The scorer's `--selftest` carries nine adversarial briefs, each of which scored 0 misses under the earlier scorer. A second review then added twelve more (a verdict after a check mark, prose in a `MISSING` or handoff line, `ref :` with a space, accented and look-alike letters, a wrong vessel or percent on a lesion id, agreeing with a quoted verdict); the scorer now rejects them and all 1,120 stored briefs of the current and previous prompts still pass. The `miss` column of the older CSV rows is as scored at the time: under today's scorer the old `595a`, `4764` and `7a39` rows show 28, 8 and 8 misses.
 - A day-3 preview run (`runs-day3-preview.csv`, 1 run) was made while the Console still held the old prompts, so its "hash" label is wrong. It missed once (Meds attached a DOAC reference tag at 30 hours). It is kept for transparency and not counted; the final prompts then passed day 3 three times in a row.
 - A fresh room's Meds agent posted without reading the room (it answered only from Labs's handoff) and missed every medication flag, in two different fresh rooms; `!reset @meds` fixed it both times. The rows from those aborted runs were removed before the streak was counted. See `RUNBOOK.md`.
 
@@ -165,7 +177,7 @@ The author's preflight (`prep_check.sh`) lives outside this repo; `RUNBOOK.md` l
 - When Imaging runs on the Cursor CLI it uses the CLI's default model on the machine (Grok on the author's); pinning a model per agent is not verified. Imaging's provider is part of the run hash, so runs on different harnesses are never counted together.
 - The recorder accepts a brief only from the agent account named in its header, and only the chair (the room's owner) can address the agents or the Clerk.
 - Pre-window helpers are not in this repo (see Disclosures).
-- Signing is bound to a recorded Allow decided after the newest brief (`plan.py` and `board_final.py` refuse otherwise), but the approval is matched by the card's description text, which the Clerk model writes.
+- Signing needs a recorded Allow once on a real Switch permission card (the recorder counts only posts Switch tagged as cards, never card-shaped text the Clerk writes), chosen by the chair, decided after the newest brief and the chair's latest ruling; `plan.py` and `board_final.py` refuse otherwise. The request is still matched by the card's description text, which the Clerk model writes. The stamp is a record check, not a cryptographic signature: the Clerk runs as the same OS user as the author, so this shows the workflow and is not a tamper-proof control.
 - Whether Switch restricts which agents can address the Clerk beyond `owner-agents` is not verified here.
 - A new room's agents can start without reading the room (a Meds reset fixes it); `RUNBOOK.md` has the check.
 - The likelihood weights, prep rules and Imaging triggers are the author's proposals, not derived from data and not clinician-reviewed.
@@ -175,12 +187,12 @@ The author's preflight (`prep_check.sh`) lives outside this repo; `RUNBOOK.md` l
 - AI-assisted build (Claude Code), with planning help from AI assistants.
 - Pre-window work, declared: recording and preflight helpers (`record.sh`, `prep_check.sh`, `watch_cards.py`, a small provider bake-off) were written before
   the window opened and are not part of this repo's build; `day.md` is adapted from a synthetic case outline written before the window opened.
-- Values in `day.md` are synthetic. The case outlines are the owner's; some fill-in values (troponin, ticagrelor timing, platelet counts, the angio lines) were drafted
+- Values in `day.md` are synthetic. The case outlines are the author's; some fill-in values (troponin, ticagrelor timing, platelet counts, the angio lines) were drafted
   with AI assistance. The planted conflicts (for example Case 3's apixaban "held" in the history but "active" in the medication list) are deliberate.
   Nothing has been independently clinician-reviewed.
 - Packet text goes to the model providers the agents run on (Anthropic via Claude Code; xAI via the Cursor CLI for the recorded Imaging runs). All of it is synthetic.
 - Mattermost bot, token, OAuth and thread settings are loosened for a local demo only.
-- Models: the four Claude Code agents ran on the user-level Claude Code settings of the author's machine (model `sonnet`, effort `xhigh`, as recorded in `freeze.txt`). **Imaging ran on the Cursor CLI's default model (Grok 4.5 High Fast; not pinned) for every recorded run in this repo (the 200 day-1, 120 day-2 and day-3 briefs, the independence run).** Before filming, the Cursor account hit its weekly usage limit, so the filmed build runs Imaging on Claude Code with the same prompt text (`provider: claude` in `template.yaml`; set it back to `cursor` to reproduce the recorded setup). The briefs of the filmed build are therefore re-verified under their own hash, not inherited. Alternatives tried the same night: opencode on the lab gateway's local models (qwen3.6 made the required tool call in 2 of 5 cases, other aliases returned errors) and Codex (the ChatGPT login rejected every model), so neither was used.
+- Models: the four Claude Code agents ran on the user-level Claude Code settings of the author's machine (model `sonnet`, effort `xhigh`, as recorded in `freeze.txt`). **Imaging ran on the Cursor CLI's default model (recorded here from the author's notes as Grok 4.5 High Fast; the model was not pinned or logged) for the earlier rows (hash `8130…`: 200 day-1, 60 day-2 and 60 day-3 briefs).** The filmed build's rows (hash `a60f…`: 200 day-1, 60 day-2, 60 day-3 briefs and the independence rerun) ran Imaging on Claude Code. Before filming, the Cursor account hit its weekly usage limit, so the filmed build runs Imaging on Claude Code with the same prompt text (`provider: claude` in `template.yaml`; set it back to `cursor` to reproduce the recorded setup). The briefs of the filmed build are therefore re-verified under their own hash, not inherited. Alternatives tried the same night: opencode on the lab gateway's local models (qwen3.6 made the required tool call in 2 of 5 cases, other aliases returned errors) and Codex (the ChatGPT login rejected every model), so neither was used.
 - History: this repo's git history starts on 2026-11-04 as an import of a private working copy; earlier edits are not in it. Nothing in it was copied from another project except the declared pre-window outline.
 - Leak guard: `tools/hooks/pre-commit` is an optional gitleaks and private-string check (install line inside it); the author's own blocked-name list is kept out of the repo.
 

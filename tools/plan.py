@@ -3,7 +3,7 @@
 and the agents' own briefs (--briefs FILE | - | DIR). Outputs plan-case-N.md/.html and, with --pdf, plan-case-N.pdf (headless Chrome).
 usage: plan.py CASE [--briefs FILE|-|DIR] [--out DIR] [--pdf] [--approved] [--force]      plan.py --selftest
 With --briefs DIR (the Clerk's flow) it refuses stale or mixed-run briefs and a dead room recorder unless --force."""
-import glob, hashlib, html, json, os, re, subprocess, sys, time
+import glob, hashlib, html, json, os, re, shutil, subprocess, sys, tempfile, time
 DASH32 = ' stroke-dasharray="3 2"'  # outside the f-string: Python < 3.12 forbids a backslash in an f-string expression
 SIGNED_AT = None  # set by main() to the chair's Allow time, so a stamp shows when the Allow was given, not when the command ran
 SIGN_WAIT_S = 10  # the recorder polls every 2 s; the Clerk can run this within 1 s of the click
@@ -39,6 +39,12 @@ def check(case, d):
         except (OSError, ValueError, KeyError): pt = None
         if pt and any(os.path.getmtime(f) < pt - 2 for f in glob.glob(os.path.join(d, "*.md"))): probs.append("a brief is older than the chair's latest packet for this case")
     return probs
+
+def chrome_pdf(html_path, pdf_path, timeout):
+    """Headless Chrome on its own throwaway profile, so it never hands the job to (or fights with) the Chrome the author films in."""
+    prof = tempfile.mkdtemp(prefix="plan-chrome-")
+    try: return subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", f"--user-data-dir={prof}", f"--print-to-pdf={pdf_path}", "file://" + os.path.abspath(html_path)], capture_output=True, timeout=timeout)
+    finally: shutil.rmtree(prof, ignore_errors=True)
 
 def packet(case):
     day = open(os.environ.get("DAY_FILE") or os.path.join(ROOT, "day.md")).read()  # DAY_FILE: run the same logic on the scenario library
@@ -187,11 +193,11 @@ def build(case, btext, approved=False, th=None):
     angio_missing = pathway != "indeterminate" and ((not ls) or "MISSING: ANGIO" in b.get("imaging", ""))
     cap = th.get("contrast_ratio_cap"); rules = []; contrast_hit = False
     if ratio is not None and cap is None: rules.append(f"Contrast ratio {ratio}: cap NOT SET, chair to supply.")
-    elif ratio is not None and ratio_raw >= cap:
-        contrast_hit = True; rules.append(f"Contrast ratio above published cutoffs: {ratio} ({cm.group(1)} mL ÷ eGFR {egfr.group(2)}) is above {cap}, a cutoff that discriminated early creatinine rise in Laskey 2007 (E2), and above 3, where risk was clearest in Gurm 2011 (E1). Observational cutoffs, not a limit; both used creatinine clearance, not eGFR. Chair to decide whether to stage.")
-    elif ratio is not None and ratio_raw >= 3:
+    elif ratio is not None and ratio >= cap:
+        contrast_hit = True; rules.append(f"Contrast ratio above the Laskey 2007 discriminator and above 3: {ratio} ({cm.group(1)} mL ÷ eGFR {egfr.group(2)}) is above {cap}, a cutoff that discriminated early creatinine rise in Laskey 2007 (E2), and above 3, where risk was clearest in Gurm 2011 (E1). Observational cutoffs, not a limit; both used creatinine clearance, not eGFR. Chair to decide whether to stage.")
+    elif ratio is not None and ratio >= 3:
         rules.append(f"Contrast ratio {ratio} is at or above 3, where risk was clearest in the Gurm 2011 registry (E1; creatinine clearance, not eGFR), and below {cap} (Laskey 2007, E2). Chair to decide.")
-    elif ratio is not None and th.get("contrast_ratio_watch") is not None and ratio_raw >= th["contrast_ratio_watch"]:
+    elif ratio is not None and th.get("contrast_ratio_watch") is not None and ratio >= th["contrast_ratio_watch"]:
         rules.append(f"Contrast ratio {ratio} is at or above {th['contrast_ratio_watch']}, where risk began to rise in the Gurm 2011 registry (E1; creatinine clearance, not eGFR). Chair to decide.")
     ht = th.get("heart_team", {}); ef = pre["ef"] if pre and pre["ef"] is not None else pk.ef(f.get("HISTORY", ""))
     fam = pk.family
@@ -202,7 +208,7 @@ def build(case, btext, approved=False, th=None):
     if angio_missing: rules.append("Angio data missing: complexity and staging were not assessed. Nothing here is a clearance.")
     elif stage == "pre-cath": pass
     elif factors: rules.append(f"Heart Team factors present (2021 ACC/AHA/SCAI; E7, E8): {'; '.join(factors)}. SYNTAX score is not computed here. These are packet factors; the chair decides what follows.")
-    if not rules or (stage == "pre-cath" and not lk): rules.append("No rule fired. The rules are proposed, and no rule firing is not clearance.")
+    if not rules or (stage == "pre-cath" and not lk): rules.append("No template rule fired; read the agents' flags below. The rules are proposed, and no rule firing is not clearance.")
     pt = re.search(r"CASE \d — (.*?) — scheduled (\S+) — (.*)", f["_head"])
     missing = [a for a in AGENTS if a not in b]
     flags = {a: [l.strip() for l in b.get(a, "").splitlines() if l.strip().startswith("🚩")] for a in AGENTS}
@@ -240,7 +246,7 @@ def md(p):
     L += ["", "## Summary and approvals", f"- Ruling recorded: {p['ruling'] or 'none yet'}", "- Flags: " + " · ".join(f"{a.title()} {len(p['flags'][a])}" for a in AGENTS)]
     L += [f"- Approval {a['request']}: {a['decision']} by {a['by']} at {records.when(a['ts'])}" for a in p["appr"]]
     if p["approved"]: L += [f"- This plan: Allow once by the chair on the Switch card, {p['stamp']}"]
-    L += ["", f"Contrast ratio: {p['ratio'] if p['ratio'] is not None else 'n/a'} (published cutoff {p['cap']}, Laskey 2007; contrast mL ÷ eGFR)" + (" · eGFR flagged unreliable in the packet" if p["unreliable"] else ""),
+    L += ["", f"Contrast ratio: {p['ratio'] if p['ratio'] is not None else 'n/a'} (Laskey 2007 discriminator {p['cap']}, not a limit; contrast mL ÷ eGFR)" + (" · eGFR flagged unreliable in the packet" if p["unreliable"] else ""),
           f"Thresholds: {p['th']['status_text'] if not p['th']['verified'] else 'verified by the chair'} · {'template logic verified' if p['th'].get('logic_verified') else LOGIC}", "",
           "**Status: " + ("APPROVED by the chair" if p["approved"] else "AWAITING CHAIR RULING") + "**", f"_Provenance: template {p['prov']['template']} · thresholds {p['prov']['thresholds']} · plan.py {p['prov']['plan']} · {p['prov']['day']} · packet id {p['prov']['packet']}_"]
     return "\n".join(L) + "\n"
@@ -275,9 +281,7 @@ MAIN = ("lm", "lad1", "lad2", "lad3", "lcx1", "lcx2", "lcx3", "rca1", "rca2", "r
 PLACE = {"lm": ("lm", .6), "lm bifurcation": ("lm", .9), "prox-lad": ("lad1", .55), "mid-lad": ("lad2", .5), "distal-lad": ("lad3", .45), "lad": ("lad2", .5), "d1": ("d1", .55), "d2": ("d2", .55),
          "prox-lcx": ("lcx1", .55), "mid-lcx": ("lcx2", .6), "distal-lcx": ("lcx3", .5), "lcx": ("lcx2", .6), "om1": ("om1", .55), "om2": ("om2", .5),
          "prox rca": ("rca1", .55), "mid-rca": ("rca2", .5), "distal rca": ("rca3", .5), "rca": ("rca2", .5), "pda": ("pda", .5), "plv": ("plv", .5)}
-def bez(pts, t_):
-    (x0, y0), (x1, y1), (x2, y2), (x3, y3) = pts; u = 1 - t_
-    return (u**3 * x0 + 3 * u * u * t_ * x1 + 3 * u * t_ * t_ * x2 + t_**3 * x3, u**3 * y0 + 3 * u * u * t_ * y1 + 3 * u * t_ * t_ * y2 + t_**3 * y3)
+bez = angio.bez  # one Bezier helper, defined in angio.py
 def pathd(pts): return "M{} {} C {} {}, {} {}, {} {}".format(*[c for p in pts for c in p])
 def tree(ls):
     """Draws every lesion on its AHA segment: the lumen narrows to the stated stenosis; red solid ring = 70% or more, amber dashed ring = under 70%; yellow dots = calcium moderate or severe."""
@@ -340,7 +344,7 @@ def htm(p):
     its += p["needs"] + [f"No brief yet from {a.title()}." for a in p["missing"]]
     items = "".join(f"<li>{B(strip(x))}</li>" for x in its) or "<li>None.</li>"
     trig = ("Angio findings: not assessed (angiography not yet performed)." if p["stage"] == "pre-cath" else "Angio findings: not assessed (no angio data)." if p["angio_missing"] else ("Triggers: " + e("; ".join(p["triggers"])) + "." if p["triggers"] else "No complexity trigger."))
-    plabel = "indeterminate, pre-cath plan" if p["stage"] == "pre-cath" else "known intervention"
+    plabel = "indeterminate, pre-cath plan" if p["stage"] == "pre-cath" else ("known pathway, no angiography block in the packet" if p["angio_missing"] else "known intervention")
     third = "n/a" if p["angio_missing"] else f"{len(p['triggers'])} / 4"
     third_label = "angio findings flagged (calcium, flow, bifurcation, multivessel)"
     if p["lk"]: third, third_label = p["lk"]["band"], f"likelihood band ({p['lk']['score']} pts, proposed rule)"
@@ -370,19 +374,19 @@ def htm(p):
 {"<div class='strip warn'>ANGIO DATA MISSING: complexity and staging were not assessed. Nothing on this page is a clearance.</div>" if p['angio_missing'] else ""}
 {"<div class='strip'>PRE-CATH PLAN: angiography has not been done. The likelihood is a label from a proposed points rule, not a probability, and the packet lists equipment for both branches.</div>" if p['stage'] == 'pre-cath' else ""}
 {"" if (th['verified'] and th.get('logic_verified')) else "<div class='strip warn'>" + e(("Thresholds: " + th['status_text'] + ". ") if not th['verified'] else "") + e(("" if th.get('logic_verified') else LOGIC_SHORT)) + "</div>"}
-<div class=cards><div class=card><b>{nf}</b><span>flags from 4 agents</span></div><div class=card><b>{ratio}</b><span>contrast ratio (published cutoff {p['cap']}, Laskey)</span></div><div class=card><b>{third}</b><span>{e(third_label)}</span></div><div class=card><b>{sum(1 for _, s in p['manifest'] if s.startswith('OUT'))}</b><span>devices out of stock</span></div></div>
+<div class=cards><div class=card><b>{nf}</b><span>flags from 4 agents</span></div><div class=card><b>{ratio}</b><span>contrast ratio (Laskey 2007 discriminator {p['cap']}, not a limit)</span></div><div class=card><b>{third}</b><span>{e(third_label)}</span></div><div class=card><b>{sum(1 for _, s in p['manifest'] if s.startswith('OUT'))}</b><span>devices out of stock</span></div></div>
 <p class=def>Contrast ratio = planned contrast (mL) ÷ eGFR. {e(th.get('contrast_ratio_basis', ''))}{e(caveat)}</p>{precard}
 <h2>Lesion map (Imaging)</h2><table><tr><th>Lesion</th><th>Vessel</th><th>Stenosis</th><th>TIMI</th><th>Calcium</th><th>Flag</th></tr>{rows or "<tr><td colspan=6>no lesions in the packet</td></tr>"}</table>
 <p style="font-size:9.5pt;color:#334">{trig} · Cath report: {e(p['report'])}</p>
 <h2>Rules that fired</h2><ul>{"".join(f"<li>{e(r)}</li>" for r in p['rules'])}</ul>
 {stg}{figure_html(p)}<div style="break-inside:avoid;{'break-before:page' if (p['lesions'] or (p['pre'] and p['pre']['cta'])) else ''}"><h2>Equipment manifest</h2>{mtab}</div>{prept}
 <div style="break-inside:avoid"><h2>Flags from the agents</h2>{fl}<p class=def>Relay: Imaging → Equipment, Labs → Meds.</p></div><div style="break-inside:avoid"><h2>Summary and approvals</h2>{summ}
-<div class=sig><div><b>Status</b><br><span style="font-size:9pt;color:#334">{sigtxt}</span></div><div class="stamp{'' if p['approved'] else ' pend'}">{'APPROVED BY CHAIR' if p['approved'] else 'AWAITING CHAIR'}</div></div></div>
+<div class=sig><div><b>Status</b><br><span style="font-size:9pt;color:#334">{sigtxt}</span></div><div class="stamp{'' if p['approved'] else ' pend'}">{'APPROVED BY CHAIR<br><span style="font-size:7pt;font-weight:600">planning draft · not a clearance</span>' if p['approved'] else 'AWAITING CHAIR'}</div></div></div>
 <p style="font-size:8.5pt;color:#444;margin-top:10px">Sources: packet ({e(p['prov']['day'])}) · briefs from Imaging, Labs, Meds, Equipment · thresholds.json · evidence table docs/EVIDENCE.md (E1 to E16, mostly secondary summaries, chair verifies). Generated {e(p['stamp'])} by plan.py (template, no model).<br>Provenance: template {e(p['prov']['template'])} · thresholds {e(p['prov']['thresholds'])} · plan.py {e(p['prov']['plan'])} · packet id {e(p['prov']['packet'])}. "ref:" on a flag names a published criterion; it is not an instruction{"" if (th['verified'] and th.get('logic_verified')) else ", and the criteria are unverified until the chair has checked them against the sources (docs/EVIDENCE.md)"}.</p></body></html>"""
 
 def render_pdf(html_path, pdf_path):
     if not os.path.exists(CHROME): return f"Chrome not found at {CHROME} (set CHROME=/path/to/chrome); the .md and .html were written"
-    r = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", f"--print-to-pdf={pdf_path}", "file://" + os.path.abspath(html_path)], capture_output=True, timeout=90)
+    r = chrome_pdf(html_path, pdf_path, 90)
     return None if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 1000 else f"Chrome produced no PDF (rc={r.returncode}): {r.stderr.decode()[-120:]}"
 
 def atomic(path, text):
@@ -418,7 +422,7 @@ def selftest():
     b = "**[IMAGING — Case 2]** 74M\n🚩 **FLAG:** calcium moderate · L1\n**[LABS — Case 2]** x\n🚩 **FLAG:** Cr 2.7\n**[MEDS — Case 2]** x\n✅\n**[EQUIPMENT — Case 2]** x\n✅"
     th = dict(verified=False, logic_verified=False, status_text="PROPOSED", contrast_ratio_cap=3.7, contrast_ratio_basis="basis", heart_team_min_triggers=3)
     p = build("2", b, th=th); p5 = build("5", "**[IMAGING — Case 5]** x\nMISSING: ANGIO block", th=th); p1 = build("1", b, th=th); pa = build("2", b, approved=True, th=th); ok = True
-    r3 = " ".join(build("3", b, th=th)["rules"]); nb = "not clearance" in r3 and "No rule fired" in r3
+    r3 = " ".join(build("3", b, th=th)["rules"]); nb = "not clearance" in r3 and "No template rule fired" in r3
     for name, cond in [("ratio 7.1", p["ratio"] == 7.1), ("contrast rule says chair decides", any("Chair to decide whether to stage" in r for r in p["rules"])), ("2 lesions", len(p["lesions"]) == 2),
                        ("3 triggers", len(p["triggers"]) == 3), ("Heart Team factors fire for EF 30% with three vessels", any("Heart Team factors" in r and "multivessel disease with EF 30%" in r for r in build("5", b, th=th)["rules"])), ("complete", not p["missing"]),
                        ("missing detected", build("2", "", th=th)["missing"] == list(AGENTS)), ("null cap", any("NOT SET" in r for r in build("2", b, th=dict(th, contrast_ratio_cap=None))["rules"])),

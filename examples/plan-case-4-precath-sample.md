@@ -72,8 +72,8 @@ Angio findings flagged: 0 of 4
 - Ruling recorded: none yet
 - Flags: Imaging 3 · Labs 0 · Meds 0 · Equipment 0
 
-Contrast ratio: n/a (published cutoff 3.7, Laskey 2007; contrast mL ÷ eGFR)
+Contrast ratio: n/a (Laskey 2007 discriminator 3.7, not a limit; contrast mL ÷ eGFR)
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template 6fbf68f001 · thresholds 51ec501c23 · plan.py 8ba2fb9faf · day.md · packet id n/a_
+_Provenance: template 6fbf68f001 · thresholds 51ec501c23 · plan.py 4b8c7ba9c3 · day.md · packet id n/a_
