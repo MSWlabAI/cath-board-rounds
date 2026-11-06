@@ -22,6 +22,7 @@ _Synthetic teaching content. Not clinical advice. Not a medical device. DRAFT fo
 ## Lesion map
 | Lesion | Vessel | Stenosis | TIMI | Calcium | Flag |
 |---|---|---|---|---|---|
+| none in the packet | | | | | |
 
 Angio findings flagged: 0 of 4
 
@@ -76,4 +77,4 @@ Contrast ratio: n/a (published cutoff 3.7, Laskey 2007; contrast mL ÷ eGFR)
 Thresholds: PROPOSED values, not yet verified by the chair · Template logic is unreviewed: the likelihood point weights and bands, the prep rules, the Imaging trigger set, the Heart Team factor rules, the stage assignment and Labs' eGFR cutoff. Setting verified=true does not cover them.
 
 **Status: AWAITING CHAIR RULING**
-_Provenance: template a0c1d013d2 · thresholds 51ec501c23 · plan.py d0e4e2d2e3 · day2.md · packet id n/a_
+_Provenance: template 6fbf68f001 · thresholds 51ec501c23 · plan.py 8ba2fb9faf · day2.md · packet id n/a_

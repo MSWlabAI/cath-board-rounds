@@ -225,7 +225,7 @@ def md(p):
         L += ["## Pre-cath findings (indeterminate pathway)", f"- Stress: {p['pre']['stress_text'] or 'n/a'}", f"- EF: {str(p['pre']['ef']) + '%' if p['pre']['ef'] is not None else 'n/a'}", f"- Symptoms: {p['pre']['symptoms_text'] or 'n/a'}"] + [f"- CCTA {c['id']} {c['vessel']} {c['pct']} · {c['calcium']}" for c in p["pre"]["cta"]]
         if p["lk"]: L += [f"- Likelihood band (proposed points rule): {p['lk']['band']} ({p['lk']['score']} points; not a probability)"] + [f"  - {d} (+{pt})" for d, pt in p["lk"]["drivers"]]
         L += [""]
-    L += ["## Lesion map", "| Lesion | Vessel | Stenosis | TIMI | Calcium | Flag |", "|---|---|---|---|---|---|"] + [f"| {l['id']} | {l['vessel']} | {l['pct']} | {l['timi']} | {l['calcium']} | {l['flag']} |" for l in p["lesions"]]
+    L += ["## Lesion map", "| Lesion | Vessel | Stenosis | TIMI | Calcium | Flag |", "|---|---|---|---|---|---|"] + ([f"| {l['id']} | {l['vessel']} | {l['pct']} | {l['timi']} | {l['calcium']} | {l['flag']} |" for l in p["lesions"]] or ["| none in the packet | | | | | |"])
     L += ["", "Angio findings flagged: " + ("not assessed" if p["angio_missing"] else f"{len(p['triggers'])} of 4" + (" (" + "; ".join(p["triggers"]) + ")" if p["triggers"] else "")), "", "## Rules that fired"] + [f"- {r}" for r in p["rules"]]
     if p["staged"]:
         L += ["", "## If the chair stages (illustration from the packet, not a recommendation)", f"- Stage 1: {', '.join(l['id'] + ' ' + l['vessel'] for l in p['s1'])} (the procedure named in the packet)",
@@ -371,7 +371,7 @@ def htm(p):
 {"" if (th['verified'] and th.get('logic_verified')) else "<div class='strip warn'>" + e(("Thresholds: " + th['status_text'] + ". ") if not th['verified'] else "") + e(("" if th.get('logic_verified') else LOGIC_SHORT)) + "</div>"}
 <div class=cards><div class=card><b>{nf}</b><span>flags from 4 agents</span></div><div class=card><b>{ratio}</b><span>contrast ratio (published cutoff {p['cap']}, Laskey)</span></div><div class=card><b>{third}</b><span>{e(third_label)}</span></div><div class=card><b>{sum(1 for _, s in p['manifest'] if s.startswith('OUT'))}</b><span>devices out of stock</span></div></div>
 <p class=def>Contrast ratio = planned contrast (mL) ÷ eGFR. {e(th.get('contrast_ratio_basis', ''))}{e(caveat)}</p>{precard}
-<h2>Lesion map (Imaging)</h2><table><tr><th>Lesion</th><th>Vessel</th><th>Stenosis</th><th>TIMI</th><th>Calcium</th><th>Flag</th></tr>{rows}</table>
+<h2>Lesion map (Imaging)</h2><table><tr><th>Lesion</th><th>Vessel</th><th>Stenosis</th><th>TIMI</th><th>Calcium</th><th>Flag</th></tr>{rows or "<tr><td colspan=6>no lesions in the packet</td></tr>"}</table>
 <p style="font-size:9.5pt;color:#334">{trig} · Cath report: {e(p['report'])}</p>
 <h2>Rules that fired</h2><ul>{"".join(f"<li>{e(r)}</li>" for r in p['rules'])}</ul>
 {stg}{figure_html(p)}<div style="break-inside:avoid;{'break-before:page' if (p['lesions'] or (p['pre'] and p['pre']['cta'])) else ''}"><h2>Equipment manifest</h2>{mtab}</div>{prept}
