@@ -45,7 +45,8 @@ For the operator (not the chair's script). The chair's flow is in `README.md`; t
 | Plan refuses: "recorder is not running" | recorder died or the Mac slept | restart it; `briefs/_recorder.log` has the error |
 | `set MM_CHAIR_PASSWORD` in the recorder log | started without the env file | `set -a; . <your env file>; set +a` then start it |
 | Card has no buttons | the card text is over 4,000 characters | Clerk commands must stay one short line; answer by typing `A<n> 1` |
-| Imaging never answers | Cursor not logged in, or the wrong `agent` on PATH | `which agent`; `cursor-agent login`; relaunch the Console from Terminal |
+| Imaging never answers (provider `cursor`) | Cursor not logged in, the wrong `agent` on PATH, or the weekly usage limit (`agent -p ok` says so) | `which agent`; `agent login`; relaunch the Console from Terminal; or set `provider: claude` for Imaging in `template.yaml` and re-import |
+| Imaging's session will not start after a crash (`Session ... not found`, `Invalid params`) | the resume record points at a Cursor session with no stored history | restart the Console; if it persists, point the session host's resume record at an older session that has a `store.db` (see `~/.cursor/acp-sessions`) |
 | Two cards, or a duplicated brief | two recorders running | `pkill -f tools/recorder.py`, start one |
 | "PARSE WARNINGS" banner on a plan | the packet has a value the plan cannot read | read the banner; fix the packet line or accept that the rule did not run |
 

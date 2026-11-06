@@ -72,7 +72,7 @@ room's owner) can address the agents or the Clerk (`addressing: owner-agents`), 
 | Actor | What it is | Provider |
 |---|---|---|
 | Chair (`chargenurse`) | the human; the only one who rules and the only one who can approve a card | Mattermost user |
-| Imaging | lesion map and angio triggers (calcium, bifurcation or ostial, TIMI below 3, multivessel) | Cursor CLI (default model; Grok on the author's machine) |
+| Imaging | lesion map and angio triggers (calcium, bifurcation or ostial, TIMI below 3, multivessel) | Cursor CLI for every recorded run (default model, Grok on the author's machine); Claude Code in the filmed build (see Disclosures). `template.yaml` carries a one-line `provider:` switch |
 | Labs | kidney function and labs against the contrast plan | Claude Code |
 | Meds | antiplatelets, anticoagulation, holds | Claude Code |
 | Equipment | devices against stock | Claude Code |
@@ -161,7 +161,7 @@ The author's preflight (`prep_check.sh`) lives outside this repo; `RUNBOOK.md` l
 - One machine. The approval-button callback uses a small local forwarder; if it dies the buttons fail while typed answers still work.
 - Switch adds its own "Worked for N s" box to every turn; there is no setting to hide it.
 - Switch shows no buttons on approval cards longer than its post limit (4,000 characters), so Clerk commands are one short line.
-- The Cursor agent runs the Cursor CLI's default model on the machine (Grok on the author's); pinning a model per agent is not verified.
+- When Imaging runs on the Cursor CLI it uses the CLI's default model on the machine (Grok on the author's); pinning a model per agent is not verified. Imaging's provider is part of the run hash, so runs on different harnesses are never counted together.
 - The recorder accepts a brief only from the agent account named in its header, and only the chair (the room's owner) can address the agents or the Clerk.
 - Pre-window helpers are not in this repo (see Disclosures).
 - Signing is bound to a recorded Allow decided after the newest brief (`plan.py` and `board_final.py` refuse otherwise), but the approval is matched by the card's description text, which the Clerk model writes.
@@ -177,9 +177,9 @@ The author's preflight (`prep_check.sh`) lives outside this repo; `RUNBOOK.md` l
 - Values in `day.md` are synthetic. The case outlines are the owner's; some fill-in values (troponin, ticagrelor timing, platelet counts, the angio lines) were drafted
   with AI assistance. The planted conflicts (for example Case 3's apixaban "held" in the history but "active" in the medication list) are deliberate.
   Nothing has been independently clinician-reviewed.
-- Packet text goes to the model providers the agents run on (Anthropic via Claude Code, xAI via Cursor). All of it is synthetic.
+- Packet text goes to the model providers the agents run on (Anthropic via Claude Code; xAI via the Cursor CLI for the recorded Imaging runs). All of it is synthetic.
 - Mattermost bot, token, OAuth and thread settings are loosened for a local demo only.
-- Models: the four Claude Code agents ran on the user-level Claude Code settings of the author's machine (model `sonnet`, effort `xhigh`, as recorded in `freeze.txt`); Imaging ran on the Cursor CLI's default model on that machine (Grok 4.5 High Fast when the freeze was taken; not pinned). Rerunning on other defaults can change the briefs.
+- Models: the four Claude Code agents ran on the user-level Claude Code settings of the author's machine (model `sonnet`, effort `xhigh`, as recorded in `freeze.txt`). **Imaging ran on the Cursor CLI's default model (Grok 4.5 High Fast; not pinned) for every recorded run in this repo (the 200 day-1, 120 day-2 and day-3 briefs, the independence run).** Before filming, the Cursor account hit its weekly usage limit, so the filmed build runs Imaging on Claude Code with the same prompt text (`provider: claude` in `template.yaml`; set it back to `cursor` to reproduce the recorded setup). The briefs of the filmed build are therefore re-verified under their own hash, not inherited. Alternatives tried the same night: opencode on the lab gateway's local models (qwen3.6 made the required tool call in 2 of 5 cases, other aliases returned errors) and Codex (the ChatGPT login rejected every model), so neither was used.
 - History: this repo's git history starts on 2026-11-04 as an import of a private working copy; earlier edits are not in it. Nothing in it was copied from another project except the declared pre-window outline.
 - Leak guard: `tools/hooks/pre-commit` is an optional gitleaks and private-string check (install line inside it); the author's own blocked-name list is kept out of the repo.
 
