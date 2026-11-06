@@ -149,7 +149,7 @@ Everything below is from live runs through the Switch room; every row is in a CS
 **What these numbers do and do not show:**
 - Repeats give the same text. Within a set, every case and agent produced the same brief in all of its runs, so the 200 day-1 briefs are 20 distinct briefs seen 10 times each, not 200 independent samples. The independence run is the evidence that the briefs follow the packet; the day-2 and day-3 sets are the evidence that the wording generalises to new data.
 - The scorer checks shape, wording and grounding against an answer key written by the same author. It does not check clinical truth.
-- The full filmed flow (`tools/dryrun.py`: five briefs, the review sheet, two rulings, the board Decline then Allow, the Case 2 plan Allow) ran end to end on the final build: 34 of 35 checks passed. The one failure is the second ruling echo: the Clerk took about 60 s to answer, the recorded ruling and the echoed text were exact, and the test matched an earlier echo post. The Allow and Decline clicks were made by the author's tooling in a rehearsal; the filmed take is made by the human chair.
+- The full filmed flow (`tools/dryrun.py`: five briefs, the review sheet, two rulings, the board Decline then Allow, the Case 2 plan Allow) ran end to end on the final build, after the signing hardening: 35 of 35 checks passed. An earlier pass of the same script on the pre-hardening build scored 34 of 35 (the Clerk took about 60 s to echo the second ruling and the test matched an earlier echo post). The Allow and Decline clicks were made by the author's tooling in a rehearsal; the filmed take is made by the human chair.
 
 ## Setup (what this entry ran on, one Mac)
 
