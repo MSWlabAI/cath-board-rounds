@@ -16,7 +16,7 @@ Hackathon entry: Flip the Switch (WeMakeDevs + SandboxAQ), Track 01, Best Busine
 - **Process:** Switch relays the work (Imaging to Equipment, Labs to Meds); each agent flags only what it can quote; the chair rules; the Clerk asks for approval on an owner-only card.
 - **Output:** a signed **plan PDF** ([sample](examples/plan-case-2-approved-sample.pdf), [pre-cath sample](examples/plan-case-4-precath-sample.pdf)) and a signed **board PDF** ([sample](examples/board-sample.pdf)). Nothing is written until the chair presses Allow once.
 
-**Look at:** [`template.yaml`](template.yaml) (the whole room: agents, handoffs, `addressing: owner-agents`, approval-gated Clerk) · the Clerk's review sheet and an approval card in the room, below · a [signed plan PDF sample](examples/plan-case-2-approved-sample.pdf) · [Results](#results).
+**Look at:** [`agents/`](agents/) (the five agent prompts) · [`template.yaml`](template.yaml) (the whole room: agents, handoffs, `addressing: owner-agents`, approval-gated Clerk) · the Clerk's review sheet and an approval card in the room, below · a [signed plan PDF sample](examples/plan-case-2-approved-sample.pdf) · [Results](#results).
 
 ![The Clerk's review sheet: each agent's flags quoted, the handoff column, the chair's ruling choices](examples/room-review-sheet.png)
 

@@ -37,7 +37,7 @@ ccc504e614329e63f33e39efa0c42a1c5f93e821d9a369c13a4177a6f542ee9a  tools/render_a
 e19b5b68875cd07f862b86893d96683b490ff161fecd7d0ee2fad9c46359d569  tools/rescore.py
 09de53c3f78bed59264351efb811cfeadb1bf3a88ed1bf9b8d6b45b0c9abe0e5  tools/scenarios_live.py
 6fcc93913a7313dc2fceb8ab4fd95daa01b59f831947b7486978b76120e68fd8  tools/scenarios_test.py
-7fcc09573af61eb78332b3be85b40dba093f761557ef6d24eb821aedb13e5f93  tools/sync_prompts.py
+af6ec3e19e088324b13396aba2034f7314d80a04e4f3f6df067af446b146ec87  tools/sync_prompts.py
 
 # agent prompts (from template.yaml)
 8b6bc2291d903314  labs       claude  3845 chars

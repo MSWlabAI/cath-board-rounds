@@ -38,6 +38,11 @@ def main(a):
             if cur != txt:
                 if "--write" in a: os.makedirs(os.path.dirname(f), exist_ok=True); open(f, "w").write(txt); print("wrote", f)
                 else: print("DRIFT", f); bad = 1
+        rf = os.path.join(ROOT, "agents", f"{name.lower()}.md")  # a readable copy of each prompt inside the repo (the source stays template.yaml)
+        cur = open(rf).read() if os.path.exists(rf) else ""
+        if cur != txt:
+            if "--write" in a: os.makedirs(os.path.dirname(rf), exist_ok=True); open(rf, "w").write(txt); print("wrote", rf)
+            else: print("DRIFT", rf); bad = 1
         if "--console" in a and prov == "claude":
             if name not in con: print(f"DRIFT console: no stored record for '{name}'"); bad = 1
             elif con[name] != txt: print(f"DRIFT console: stored prompt for '{name}' differs from template.yaml ({len(con[name])} vs {len(txt)} chars): re-import the template"); bad = 1
