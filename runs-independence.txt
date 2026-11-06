@@ -1,0 +1,27 @@
+2026-11-05 19:07:52 (Case 2 with Cr 3.1, K 5.9, Hgb 9.4, L1 80%, aPTT 88 s, DES 3.5x28 stock 0)
+--- imaging
+@chargenurse @equipment **[IMAGING — Case 2]** 74M · 09:30
+**Lesions:** L1 mid-LAD 80% TIMI 2 calcium moderate none · L2 mid-LCx 70% TIMI 3 calcium none none
+🚩 **FLAG:** calcium moderate · L1 mid-LAD 80%
+🚩 **FLAG:** TIMI below 3 · L1 mid-LAD 80% TIMI 2
+🚩 **FLAG:** multivessel · L1 L2
+🔁 **HANDOFF → Equipment:** calcium moderate, TIMI below 3, multivessel · your turn for Case 2
+--- labs
+@chargenurse @meds **[LABS — Case 2]** 74M · 09:30
+**Values:** Cr 3.1 (2.2 yesterday) · eGFR 24 · Hgb 9.4 · Plt 212 · INR 1.0 · K 5.9 (ref 3.5-5.0) · Trop peak 2.4 ng/mL · Est. contrast 170 mL
+🚩 **FLAG:** Cr 3.1 vs 2.2 yesterday · ref: KDIGO AKI
+🚩 **FLAG:** eGFR 24 · Est. contrast 170 mL · ref: Laskey 2007 ratio
+🚩 **FLAG:** K 5.9 · ref 3.5-5.0
+🔁 **HANDOFF → Meds:** Est. contrast 170 mL with eGFR 24 · your turn for Case 2
+--- meds
+@chargenurse **[MEDS — Case 2]** 74M · 09:30
+**Values:** aspirin · ticagrelor loaded 05:00 · heparin infusion running (aPTT 88 s at 05:30) · metformin on list · NKDA
+🚩 **FLAG:** heparin infusion running · radial access
+🚩 **FLAG:** metformin on the list · eGFR 24 · ref: ACR metformin
+--- equipment
+@chargenurse **[EQUIPMENT — Case 2]** 74M · 09:30
+**Devices:** 7F guide · NC balloon 3.5 mm · DES 3.5x28 mm · standard PCI tray
+**Contrast (plan estimate):** 170 mL
+🚩 **FLAG:** DES 3.5x28 mm 0 on hand · DEVICES: "DES 3.5x28 mm"
+INDEPENDENCE OK: every changed value shows up in the right brief
+SAFETY (grounding and forbidden words on the perturbed briefs): OK

@@ -51,7 +51,7 @@ python3 tools/plan.py 2 --briefs examples/briefs-case-2.md --out /tmp/plan --pdf
 python3 tools/board_pdf.py examples/board-sample.md /tmp/board.pdf --approved       # the signed-board PDF
 ```
 
-Python 3, standard library only (written and run on 3.14). The live room needs Switch, Mattermost and two agent CLIs: see Setup.
+Python 3.9 or newer, standard library only (the offline tests pass on 3.9.6 and 3.14.7). The live room needs Switch, Mattermost and two agent CLIs: see Setup.
 
 ## Workflow (a relay, not a free-for-all)
 
@@ -104,7 +104,7 @@ Then `@clerk Case 2 = REVIEWED WITH NOTES ; contrast vs eGFR ; operator to confi
 ```
 ./check.sh --run --n 10          # live: all five cases through four agents; scored; appended to runs.csv with the prompt hash
 python3 tools/check.py --streak  # consecutive clean runs on the CURRENT prompts
-DAY_FILE=day2.md EXPECTED_FILE=expected2.json RUNS_CSV=runs-day2.csv python3 tools/check.py --run --n 3   # the unrehearsed day 2
+DAY_FILE=day2.md EXPECTED_FILE=expected2.json RUNS_CSV=runs-day2.csv python3 tools/check.py --run --n 3   # day 2, a second set of packets
 python3 tools/scenarios_live.py  # the scenario library through the live agents (flags derived from each packet)
 python3 tools/dryrun.py          # smoke test of the whole filmed flow (three human clicks)
 python3 tools/sync_prompts.py --console   # template vs agent folders vs the Console's stored copies; prints SHA-256 per prompt
@@ -122,14 +122,14 @@ Everything below is from live runs through the Switch room; every row is in a CS
 | Set | Runs | Briefs | Misses | Notes |
 |---|---|---|---|---|
 | Day 1, final prompts (`runs.csv`, hash `8130…`) | 10 | 200 | **0** | 30 format notes (a line over 140 characters; logged, not counted). After the clinical-wording and prompt-contradiction fixes; the scorer now also checks content (see below). The streak restarted at 0 when the prompts changed, then reached 10 in a row. |
-| Day 2, unrehearsed (`runs-day2c.csv`) | 3 | 60 | **0** | Different patients, drugs, labs, devices and stock. |
-| Day 3, unrehearsed with decoys (`runs-day3.csv`) | 3 | 60 | **0** | Values on range edges, a stable-but-abnormal creatinine, a 30 h apixaban dose that must not get a reference tag, a CCTA 45% and negative stress test, a packet with no angiography block, and a packet that tells the agents to call the case safe. |
-| Independence (`tools/independence.py`) | 1 | 4 | pass | Four packet values changed (Cr, K, Hgb, one stenosis); every change showed up in the right brief. |
+| Day 2, held-out packets, final prompts (`runs-day2c.csv`) | 3 | 60 | **0** | Different patients, drugs, labs, devices and stock. |
+| Day 3, held-out packets with decoys, final prompts (`runs-day3.csv`) | 3 | 60 | **0** | Values on range edges, a stable-but-abnormal creatinine, a 30 h apixaban dose that must not get a reference tag, a CCTA 45% and negative stress test, a packet with no angiography block, and a packet that tells the agents to call the case safe. |
+| Independence (`tools/independence.py`, log `runs-independence.txt`) | 1 | 4 | pass | Six packet values changed (Cr, K, Hgb, one stenosis, the heparin aPTT, one device's stock set to 0); every change showed up in the right agent's brief (Labs, Imaging, Meds, Equipment), and the changed briefs also passed the grounding and forbidden-word checks. |
 
 **What went wrong on the way (kept in the logs):**
 - Earlier prompt versions: `runs.csv` also holds 756 briefs on four older prompt hashes (`595a`, `4764`, `7a39`, and `23c7`, the previous frozen prompts: 420 briefs, 0 misses). The only misses are 8 on `7a39…`, all the phrase `TIMI below 3`, because Imaging's trigger wording was ambiguous. The prompt was fixed, not the scorer. Earlier tuning runs are in `runs-tuning.csv` (160 rows, not counted).
 - Day 2, first scoring (`runs-day2.csv`): 3 misses, all one line, a scorer false positive (the agent quoted the packet's own word "stopped"). The scorer now allows a forbidden word only when it is the packet's own wording. `runs-day2b.csv` is the rescore. Those two day-2 files predate the final prompts.
-- The scorer was tightened midway (every number must be in the packet, lesion ids and triggers must match the lesion row, reference tags must match exactly, a wider list of forbidden words, Unicode look-alikes folded). Rescoring with the final scorer, the 420 day-1 briefs of the previous frozen prompts and all 180 day-2 rows (including the three rows first marked as misses) pass.
+- The scorer was tightened twice, the second time after an adversarial review that built briefs which violated the rules yet scored 0 misses. Now: the whole header line must match; only the briefs' own labels are allowed; every number must be in the packet; lesion ids and each trigger on a flag line must match the lesion row; every reference tag, in any letter case, must be one of the card's tags; clean cases need the 'nothing flagged' line; a wider forbidden list (hold, alternative, hydrate, wait for, safe to, ok to, reschedule, ...); format characters are stripped and look-alike letters are mapped before scanning; and a forbidden word is allowed only as the packet's own words inside quotation marks. `tools/rescore.py` reruns the current scorer over stored briefs: all 420 day-1 briefs of the previous frozen prompts, the 200 current ones, all 180 day-2 rows and the 60 day-3 rows pass, and the day-3 preview's DOAC-tag miss is still caught. The scorer's `--selftest` carries nine adversarial briefs, each of which scored 0 misses under the earlier scorer.
 - A day-3 preview run (`runs-day3-preview.csv`, 1 run) was made while the Console still held the old prompts, so its "hash" label is wrong. It missed once (Meds attached a DOAC reference tag at 30 hours). It is kept for transparency and not counted; the final prompts then passed day 3 three times in a row.
 - A fresh room's Meds agent once posted without reading the room (it answered only from Labs's handoff) and missed every medication flag; resetting the agent fixed it. The 24 rows that run logged were removed from `runs.csv` before the streak was recounted. See `RUNBOOK.md`.
 

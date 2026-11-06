@@ -84,7 +84,7 @@
       "flag": [
         "CCTA",
         "stress",
-        "EF"
+        "\\bEF\\b"
       ]
     }
   },
