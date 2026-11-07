@@ -11,6 +11,8 @@ writes the final board or a plan PDF **only after the chair presses Allow once o
 
 Hackathon entry: Flip the Switch (WeMakeDevs + SandboxAQ), Track 01, Best Business Workflow. Single author. The filmed build runs all five agents on Claude Code.
 
+**Demo video (2:26):** https://youtu.be/5h3N81vC-5E
+
 **Input → process → output**
 - **Input:** a synthetic case packet the chair pastes into the room (`./case 2 imaging labs`).
 - **Process:** Switch relays the work (Imaging to Equipment, Labs to Meds); each agent flags only what it can quote; the chair rules; the Clerk asks for approval on an owner-only card.
